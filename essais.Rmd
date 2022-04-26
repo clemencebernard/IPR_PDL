@@ -168,6 +168,8 @@ Valeur médiane de l'IPR du département (pointillés) et quantiles 25% et 75% (
   
 ```
 
+Interprétation du graphique ci-dessous : En pointillés c’est la médiane annuelle de l’IPR. La zone grisée les quantiles 25% et 75% (homologues de la « boite » dans les boîtes à moustache). En bleu c’est la tendance linéaire pour le département et en marron la médiane régionale.
+
 ```{r}
 dept_ipr %>%
   group_by(annee) %>%
@@ -190,11 +192,16 @@ dept_ipr %>%
   geom_smooth(aes(x = annee,
                   y = ipr50),
               method = "lm",
-              se = FALSE) +
+              se = FALSE,
+              size = 0.5) +
   ylab("IPR médian") +
   theme(legend.position = "bottom",
         strip.text.x = element_text(size = 10),
-        axis.text.x = element_text(angle = 0, hjust = 0.5))
+        axis.text.x = element_text(angle = 0, hjust = 0.5)) +
+  geom_line(data = reg_ipr_mediane,
+            aes(x = annee,
+                y = ipr_med),
+            col = "brown")
 ```
 
 
