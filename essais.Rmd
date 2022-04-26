@@ -1,0 +1,391 @@
+---
+title: "Bilan départemental des pêches"
+author: "OFB - DR Bretagne"
+date: "`r format(Sys.time(), 'Le %d %B %Y')`"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+
+
+```{r}
+library(aspe)
+library(tidyverse)
+
+rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data",
+                                         pattern = "^tables")
+
+load(rdata_tables)
+```
+
+
+```{r}
+# identification de mon département
+mon_dept <- '35'
+```
+
+
+
+```{r}
+# création de la passerelle et ajout des codes dept et région
+reg_data <- mef_creer_passerelle() %>% 
+  mef_ajouter_dept() %>% 
+  left_join(COGiter::departements %>% select(DEP, REG),
+            by = c("dept" = "DEP")) %>% 
+  left_join(COGiter::regions %>% select(REG,
+                                        region = NOM_REG)) %>% 
+  select(-REG) %>% 
+  filter(region == "Bretagne")
+
+# sélection des opérations, ajout date et libelle de la station
+reg_ope <- reg_data %>% 
+  select(sta_id,
+         pop_id,
+         ope_id,
+         dept,
+         region) %>% 
+  distinct() %>% 
+  mef_ajouter_ope_date() %>% 
+  mef_ajouter_libelle()
+
+# nb de pêches par point
+annees_par_point <- reg_ope %>% 
+  group_by(pop_id) %>% 
+  summarise(n_annees = n_distinct(annee))
+
+# filtrage des opérations sur les dates et mini 6 pêches
+reg_ope <- reg_ope %>% 
+  left_join(annees_par_point) %>% 
+  filter(n_annees > 6,
+         annee > 1999)
+```
+
+
+```{r}
+ma_region <- reg_data %>% 
+  filter(dept == mon_dept) %>% 
+  slice(1) %>% 
+  pull(region)
+```
+
+
+# IPR
+
+
+```{r}
+reg_ipr <- reg_ope %>% 
+  mef_ajouter_ipr() %>% 
+  filter(!is.na(ipr))
+
+dept_ipr <- reg_ipr %>%
+  filter(dept == mon_dept)
+```
+
+## Graphiques par station depuis 2000
+
+```{r, fig.width = 10, fig.height = reg_ipr %>% filter(dept == mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(2)}
+classe_ipr <- classe_ipr %>%
+  aspe::ip_completer_classes_couleur()
+
+dept_ipr %>%
+  gg_temp_ipr(var_id_sta = pop_libelle,
+              var_ipr = ipr,
+              nb_colonnes = 5)
+```
+
+## Tableau depuis 2010
+
+```{r, fig.width = 9}
+table_ipr <- dept_ipr %>% 
+  filter(annee > 2009) %>%
+  mutate(ipr = round(ipr, 2)) %>% 
+  select(pop_libelle, annee, ipr) %>% 
+  spread(key = annee,
+         value = ipr) # pb dans l'ordre des colonnes avec pivot_wider()
+
+DT::datatable(table_ipr %>% replace(is.na(.), "-"))
+```
+
+```{r, echo = FALSE}
+table_ipr %>% 
+  downloadthis::download_this(output_name = "IPR_annuel_par_station",
+                              button_label = "Télécharger les IPR",
+                              button_type = "success")
+```
+
+Evolution des IPR dans le département (boîtes à moustaches) en regard de la médiane régionale (ligne pointillée rouge).
+
+```{r}
+reg_ipr_mediane <- reg_ipr %>% 
+  group_by(annee) %>% 
+  summarise(ipr_med = median(ipr)) %>% 
+  ungroup()
+
+dept_ipr <- dept_ipr %>% 
+  left_join(reg_ipr_mediane)
+
+ggplot(data = dept_ipr,
+       aes(x = as.factor(annee),
+           y = ipr)) +
+    geom_boxplot(outlier.shape = NA) +
+  labs(x = "",
+       y = "IPR",
+       title = mon_dept) +
+  theme(axis.text.x=element_text(angle = 45,
+                                 hjust = 1)) +
+  geom_line(aes(y = ipr_med,
+                group = 1),
+            col = "red",
+            linetype = "dotted") +
+  coord_cartesian(ylim = c(0, quantile(dept_ipr$ipr, 0.95)))
+```
+
+Valeur médiane de l'IPR du département (pointillés) et quantiles 25% et 75% (zone grisée). La tendance linéaire est indiquée en bleu.
+
+```{r}
+# dept_ipr %>%
+#   group_by(annee) %>%
+#   summarise(ipr25 = quantile(ipr, 0.25),
+#             ipr50 = quantile(ipr, 0.50),
+#             ipr75 = quantile(ipr, 0.75)) %>%
+#   ggplot(aes(x = annee,
+#              y = ipr50,
+#              ymin = ipr25,
+#              ymax = ipr75)) +
+#   labs(x = "",
+#        y = "IPR") +
+#   geom_ribbon(alpha = 0.5) +
+#   geom_line(col = "red",
+#             linetype = "dotted",
+#             size = 1,
+#             stat = "identity") +
+#   geom_smooth(method = "lm",
+#               se = FALSE) +
+#   scale_y_reverse(limits = c(NA, 0))
+  
+```
+
+```{r}
+dept_ipr %>%
+  group_by(annee) %>%
+  summarise(
+    ipr25 = quantile(ipr, 0.25),
+    ipr50 = quantile(ipr, 0.50),
+    ipr75 = quantile(ipr, 0.75)
+  ) %>%
+  mutate(pop_libelle = "Département") %>%
+  aspe::gg_temp_ipr(var_id_sta = pop_libelle,
+                    var_ipr = ipr50,
+                    nb_colonnes = 5) +
+  geom_ribbon(aes(
+    x = annee,
+    y = ipr50,
+    ymin = ipr25,
+    ymax = ipr75
+  ),
+  alpha = 0.2) +
+  geom_smooth(aes(x = annee,
+                  y = ipr50),
+              method = "lm",
+              se = FALSE) +
+  ylab("IPR médian") +
+  theme(legend.position = "bottom",
+        strip.text.x = element_text(size = 10),
+        axis.text.x = element_text(angle = 0, hjust = 0.5))
+```
+
+
+# Les espèces
+
+## Caractérisation de la dynamique
+
+
+
+
+```{r}
+# agrégation des captures à l'opération
+reg_sp <- reg_data %>%  
+  filter(ope_id %in% unique(reg_ope$ope_id)) %>% 
+  mef_ajouter_lots() %>% 
+  mef_ajouter_ope_date() %>% 
+  group_by(sta_id,
+           pop_id,
+           ope_date,
+           ope_id,
+           annee,
+           dept,
+           esp_code_alternatif) %>% 
+  summarise(effectif = sum(lop_effectif)) %>% 
+  ungroup()
+
+# toutes les combinatsons espèce x operation
+reg_sp_combin_sp_ope <- expand.grid(ope_id = unique(reg_sp$ope_id),
+                                    esp_code_alternatif = unique(reg_sp$esp_code_alternatif))
+
+# complétude du tableau avec les absences et calcul des densités
+reg_sp2 <- reg_sp_combin_sp_ope %>% 
+  left_join(reg_sp) %>% 
+  mef_ajouter_surf_calc() %>% 
+  mutate(effectif = replace_na(effectif, 0), 
+         densite = effectif / ope_surface_calculee)
+
+reg_densites_an <- reg_sp2 %>% 
+  group_by(annee, dept, esp_code_alternatif) %>% 
+    summarise(densite_qd_pres_med = median(densite, na.rm = TRUE),
+              densite_qd_pres_moy = mean(densite, na.rm = TRUE),
+              densite_yc_abs_moy = sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
+
+```
+
+## Principales espèces
+
+```{r}
+especes_patrimoniales <- c("ANG", "TRF", "SAT")
+
+ppales_sp <- reg_sp %>% 
+  filter(dept == mon_dept,
+         !esp_code_alternatif %in% especes_patrimoniales) %>% 
+  group_by(esp_code_alternatif) %>% 
+  summarise(effectif = sum(effectif)) %>% 
+  arrange(-effectif) %>% 
+  slice(1:3) %>% 
+  pull(esp_code_alternatif) %>% 
+  c(especes_patrimoniales)
+```
+
+```{r}
+dept_captures <- reg_sp %>% 
+  mutate(esp_code_alternatif = ifelse(esp_code_alternatif %in% ppales_sp,
+                                      esp_code_alternatif,
+                                      "Autres")) %>%
+  filter(annee > 1999,
+         dept == mon_dept) %>% 
+  group_by(esp_code_alternatif, annee) %>% 
+  summarise(effectif = sum(effectif)) %>% 
+  group_by(annee) %>%
+    complete(esp_code_alternatif, fill = list(effectif = 0)) %>% 
+  mutate(effectif_tot = sum(effectif),
+         pc = effectif / effectif_tot) %>% 
+  mutate(esp_code_alternatif = fct_reorder(esp_code_alternatif, effectif),
+         esp_code_alternatif = fct_relevel(esp_code_alternatif, "Autres"))
+
+dept_captures %>% 
+  ggplot(aes(x = annee,
+             y = pc,
+             fill = esp_code_alternatif)) +
+    geom_area() +
+    scale_fill_brewer(palette = "Dark2") +
+  labs(x = "",
+       y = "Pourcentage des individus capturés") +
+  scale_y_continuous(labels = scales::percent)
+```
+
+
+
+```{r}
+mon_espece <- ppales_sp[1]
+
+esp_data <- data %>% 
+  mef_ajouter_lots() %>% 
+  filter(esp_code_alternatif == mon_espece) %>% 
+  mef_ajouter_ope_date() %>% 
+  group_by(annee, esp_code_alternatif, ope_id) %>% 
+    summarise(effectif = sum(lop_effectif)) %>%
+  ungroup() %>% 
+  mef_ajouter_surf_calc()
+```
+
+
+```{r}
+mon_espece <- "ANG"
+mon_dept <- "22"
+ma_variable <- densite_qd_pres_med
+
+reg_densites_an %>% 
+  filter(esp_code_alternatif == mon_espece,
+         dept == mon_dept) %>% 
+  ggplot(aes(x = annee,
+             y = densite_qd_pres_med)) +
+    geom_line() +
+    geom_point() +
+    coord_cartesian(ylim = c(0, NA))
+
+gg_temp_densite <- function(df, code_espece, dept, var_densite)
+  
+{
+  var_densite <- enquo(var_densite)
+  
+  if(is.character(dept)) {dept <- as.integer(dept)}
+  
+  
+  g <- reg_densites_an %>% 
+    filter(esp_code_alternatif == code_espece,
+           dept == mon_dept) %>% 
+    ggplot(aes(x = annee,
+               y = !!var_densite)) +
+      geom_line() +
+      geom_point() +
+      coord_cartesian(ylim = c(0, NA)) +
+      labs(title = code_espece)
+  
+  g
+}
+
+reg_densites_an %>% 
+  gg_temp_densite(code_espece = "TRF",
+                  dept = 22,
+                  var_densite = densite_qd_pres_med)
+
+```
+
+
+
+
+```{r, results = 'hide'}
+# rdata_mei <- misc_nom_dernier_fichier(repertoire = "../../../../projets/ASPE/raw_data",
+#                                          pattern = "^mei")
+# 
+# load(rdata_mei)
+# 
+# mei <- data %>% 
+#   mef_ajouter_lots() %>% 
+#   mef_ajouter_esp() %>% 
+#   filter(esp_code_alternatif %in% c("SAN", "BRO", "GAR", "BRE", "SIL", "PER", "ANG", "BRB")) %>% 
+#   mef_ajouter_mei()
+# 
+# especes <- mei %>% 
+#   pull(esp_nom_commun) %>% 
+#   unique()
+# map(.x = especes,
+#     .f = gg_dyn_esp_pop,
+#     df = mei,
+#     libelle_point = mei$pop_libelle[1])
+  
+```
+
+
+```{r, echo = FALSE}
+# mei %>% 
+#   downloadthis::download_this(output_name = "vilaine_rieux_tailles",
+#                               button_label = "Télécharger les tailles",
+#                               button_type = "success")
+```
+
+# Richesse spécifique
+
+Evolution temporelle du nombre d'espèces identifiées dans le département.
+
+```{r}
+richesse_dept <- effectifs_dept %>% 
+  group_by(annee) %>% 
+  mutate(n_especes = n_distinct(esp_code_alternatif))
+
+ggplot(data = richesse_dept,
+       aes(x = annee,
+           y = n_especes)) +
+  geom_line()
+```
+
