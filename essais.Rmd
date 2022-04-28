@@ -145,30 +145,7 @@ ggplot(data = dept_ipr,
 
 Valeur médiane de l'IPR du département (pointillés) et quantiles 25% et 75% (zone grisée). La tendance linéaire est indiquée en bleu.
 
-```{r}
-# dept_ipr %>%
-#   group_by(annee) %>%
-#   summarise(ipr25 = quantile(ipr, 0.25),
-#             ipr50 = quantile(ipr, 0.50),
-#             ipr75 = quantile(ipr, 0.75)) %>%
-#   ggplot(aes(x = annee,
-#              y = ipr50,
-#              ymin = ipr25,
-#              ymax = ipr75)) +
-#   labs(x = "",
-#        y = "IPR") +
-#   geom_ribbon(alpha = 0.5) +
-#   geom_line(col = "red",
-#             linetype = "dotted",
-#             size = 1,
-#             stat = "identity") +
-#   geom_smooth(method = "lm",
-#               se = FALSE) +
-#   scale_y_reverse(limits = c(NA, 0))
-  
-```
 
-Interprétation du graphique ci-dessous : En pointillés c’est la médiane annuelle de l’IPR. La zone grisée les quantiles 25% et 75% (homologues de la « boite » dans les boîtes à moustache). En bleu c’est la tendance linéaire pour le département et en marron la médiane régionale.
 
 ```{r}
 dept_ipr %>%
@@ -204,6 +181,8 @@ dept_ipr %>%
             col = "brown")
 ```
 
+Interprétation du graphique ci-dessus : En pointillés c’est la médiane annuelle de l’IPR. La zone grisée les quantiles 25% et 75% (homologues de la « boite » dans les boîtes à moustache). En bleu c’est la tendance linéaire pour le département et en marron la médiane régionale.
+
 
 # Les espèces
 
@@ -226,24 +205,40 @@ reg_sp <- reg_data %>%
            dept,
            esp_code_alternatif) %>% 
   summarise(effectif = sum(lop_effectif)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mef_ajouter_surf_calc() %>% 
+  mutate(effectif = replace_na(effectif, 0))
+# , 
+#          densite = effectif / ope_surface_calculee,
+#          densite = ifelse(is.infinite(densite),
+#                           yes = NA,
+#                           no = densite))
 
-# toutes les combinatsons espèce x operation
-reg_sp_combin_sp_ope <- expand.grid(ope_id = unique(reg_sp$ope_id),
-                                    esp_code_alternatif = unique(reg_sp$esp_code_alternatif))
 
 # complétude du tableau avec les absences et calcul des densités
-reg_sp2 <- reg_sp_combin_sp_ope %>% 
-  left_join(reg_sp) %>% 
-  mef_ajouter_surf_calc() %>% 
-  mutate(effectif = replace_na(effectif, 0), 
-         densite = effectif / ope_surface_calculee)
+reg_sp <- reg_sp %>% 
+  pivot_wider(names_from = esp_code_alternatif,
+              values_from = effectif,
+              values_fill = 0) %>% 
+  pivot_longer(cols = -(sta_id:ope_surface_calculee),
+               names_to = "esp_code_alternatif",
+               values_to = "effectif") %>% 
+    mutate(densite = effectif / ope_surface_calculee)
 
-reg_densites_an <- reg_sp2 %>% 
+dept_densites_an <- reg_sp %>% 
   group_by(annee, dept, esp_code_alternatif) %>% 
     summarise(densite_qd_pres_med = median(densite, na.rm = TRUE),
               densite_qd_pres_moy = mean(densite, na.rm = TRUE),
               densite_yc_abs_moy = sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
+
+reg_densites_an <- reg_sp %>% 
+  group_by(annee, esp_code_alternatif) %>% 
+    summarise(densite_reg_qd_pres_med = median(densite, na.rm = TRUE),
+              densite_reg_qd_pres_moy = mean(densite, na.rm = TRUE),
+              densite_reg_yc_abs_moy = sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
+
+prov <- dept_densites_an %>% 
+  left_join(reg_densites_an)
 
 ```
 
