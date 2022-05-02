@@ -188,15 +188,31 @@ Interprétation du graphique ci-dessus : En pointillés c’est la médiane annu
 
 ## Caractérisation de la dynamique
 
+On opère une suite d'opérations :
+
+- filtrage des données nationales sur les opérations de la région depuis 1999 
+- ajout aux données à l'opération de la date et des lots
+- suppression des hybrides et les codes "CYP" (cyprinidés non déterminés à l'espèce)
+- recodages des carpes, vandoises etc.
+- agrégation des captures à l'opération
+- ajout des surfaces prospectées
 
 
 
 ```{r}
-# agrégation des captures à l'opération
 reg_sp <- reg_data %>%  
   filter(ope_id %in% unique(reg_ope$ope_id)) %>% 
-  mef_ajouter_lots() %>% 
-  mef_ajouter_ope_date() %>% 
+  mef_ajouter_lots() %>%  # ajout des lots
+  mef_ajouter_ope_date() %>% # ajout date
+  filter(!esp_code_alternatif %in% c("HBG", "CYP")) %>% 
+  mutate(esp_code_alternatif = case_when(   # recodages à l'espèce
+    esp_code_alternatif %in% c("CCU", "CCX", "CMI") ~ "CCO",
+    esp_code_alternatif %in% c("CAG", "CAD", "CAA", "CAS", "CAX") ~ "CAR",
+    esp_code_alternatif == "VAN" ~ "VAR",
+    esp_code_alternatif == "BRX" ~ "BRE",
+    esp_code_alternatif == "GOX" ~ "GOU",
+    TRUE ~ esp_code_alternatif
+    )) %>%
   group_by(sta_id,
            pop_id,
            ope_date,
@@ -206,16 +222,15 @@ reg_sp <- reg_data %>%
            esp_code_alternatif) %>% 
   summarise(effectif = sum(lop_effectif)) %>% 
   ungroup() %>% 
-  mef_ajouter_surf_calc() %>% 
-  mutate(effectif = replace_na(effectif, 0))
-# , 
-#          densite = effectif / ope_surface_calculee,
-#          densite = ifelse(is.infinite(densite),
-#                           yes = NA,
-#                           no = densite))
+  mef_ajouter_surf_calc() %>% # ajout de la surface prospectée 
+  mutate(effectif = replace_na(effectif, 0)) %>% 
+  droplevels()
+```
 
+On complète le tableau avec les absences et calcul des densités. Pour certains graphiques on veut représenter les dynamiques départementales en regard des dynamiques régionales donc on calcule les densités à ces deux échelles et on les rassemble dans un même data frame.
 
-# complétude du tableau avec les absences et calcul des densités
+```{r}
+# densités à l'opération au niveau régional
 reg_sp <- reg_sp %>% 
   pivot_wider(names_from = esp_code_alternatif,
               values_from = effectif,
@@ -223,123 +238,125 @@ reg_sp <- reg_sp %>%
   pivot_longer(cols = -(sta_id:ope_surface_calculee),
                names_to = "esp_code_alternatif",
                values_to = "effectif") %>% 
-    mutate(densite = effectif / ope_surface_calculee)
+  mutate(densite = effectif / ope_surface_calculee)
 
+# agrégation annuelle par département et par espèce
 dept_densites_an <- reg_sp %>% 
   group_by(annee, dept, esp_code_alternatif) %>% 
     summarise(densite_qd_pres_med = median(densite, na.rm = TRUE),
               densite_qd_pres_moy = mean(densite, na.rm = TRUE),
               densite_yc_abs_moy = sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
 
+# idem mais à l'échelle régionale
 reg_densites_an <- reg_sp %>% 
   group_by(annee, esp_code_alternatif) %>% 
     summarise(densite_reg_qd_pres_med = median(densite, na.rm = TRUE),
               densite_reg_qd_pres_moy = mean(densite, na.rm = TRUE),
               densite_reg_yc_abs_moy = sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
 
-prov <- dept_densites_an %>% 
+# regroupement des deux
+dept_densites_an <- dept_densites_an %>% 
   left_join(reg_densites_an)
-
 ```
 
-## Principales espèces
+## Espèces
+
+On va avoir des graphiques séparés pour les écrevisses, les poissons EEE et les autres espèces.
 
 ```{r}
-especes_patrimoniales <- c("ANG", "TRF", "SAT")
+eee <- c("PES", "PCH", "PSR", "OPG")
 
-ppales_sp <- reg_sp %>% 
-  filter(dept == mon_dept,
-         !esp_code_alternatif %in% especes_patrimoniales) %>% 
-  group_by(esp_code_alternatif) %>% 
-  summarise(effectif = sum(effectif)) %>% 
-  arrange(-effectif) %>% 
-  slice(1:3) %>% 
+ecr <- ref_espece %>% 
+  filter(str_detect(esp_nom_commun, "Ecrevisse") | esp_code_alternatif == "APT") %>% 
+  filter(esp_code_alternatif != "ECR") %>% 
+  pull(esp_code_alternatif)
+
+poissons_loc <- dept_densites_an %>% 
   pull(esp_code_alternatif) %>% 
-  c(especes_patrimoniales)
+  unique() %>% 
+  setdiff(eee) %>% 
+  setdiff(ecr)
 ```
 
-```{r}
-dept_captures <- reg_sp %>% 
-  mutate(esp_code_alternatif = ifelse(esp_code_alternatif %in% ppales_sp,
-                                      esp_code_alternatif,
-                                      "Autres")) %>%
-  filter(annee > 1999,
-         dept == mon_dept) %>% 
-  group_by(esp_code_alternatif, annee) %>% 
-  summarise(effectif = sum(effectif)) %>% 
-  group_by(annee) %>%
-    complete(esp_code_alternatif, fill = list(effectif = 0)) %>% 
-  mutate(effectif_tot = sum(effectif),
-         pc = effectif / effectif_tot) %>% 
-  mutate(esp_code_alternatif = fct_reorder(esp_code_alternatif, effectif),
-         esp_code_alternatif = fct_relevel(esp_code_alternatif, "Autres"))
+```{r, fig.width = 10, fig.height = dept_densites_an %>% filter(dept == mon_dept) %>% pull(esp_code_alternatif) %>% unique %>% length %>% `/`(2.5)}
+dept_densites_an %>%
+  filter(dept == mon_dept,
+         esp_code_alternatif %in% poissons_loc) %>%
+#   droplevels() %>% 
+#   group_by(esp_code_alternatif, annee) %>% 
+#   summarise(effectif = sum(effectif)) %>% 
+#   group_by(annee) %>%
+#     complete(esp_code_alternatif, fill = list(effectif = 0)) %>% 
+#   mutate(effectif_tot = sum(effectif),
+#          pc = effectif / effectif_tot) %>% 
+#   mutate(esp_code_alternatif = fct_reorder(esp_code_alternatif, effectif),
+#          esp_code_alternatif = fct_relevel(esp_code_alternatif, "Autres"))
 
-dept_captures %>% 
   ggplot(aes(x = annee,
-             y = pc,
-             fill = esp_code_alternatif)) +
-    geom_area() +
-    scale_fill_brewer(palette = "Dark2") +
+             y = densite_yc_abs_moy)) +
+    geom_line(size = 0.5) +
   labs(x = "",
-       y = "Pourcentage des individus capturés") +
-  scale_y_continuous(labels = scales::percent)
+       y = "Densité") +
+  facet_wrap(~esp_code_alternatif,
+             scales = "free_y",
+             ncol = 4)
 ```
 
 
 
 ```{r}
-mon_espece <- ppales_sp[1]
-
-esp_data <- data %>% 
-  mef_ajouter_lots() %>% 
-  filter(esp_code_alternatif == mon_espece) %>% 
-  mef_ajouter_ope_date() %>% 
-  group_by(annee, esp_code_alternatif, ope_id) %>% 
-    summarise(effectif = sum(lop_effectif)) %>%
-  ungroup() %>% 
-  mef_ajouter_surf_calc()
+# mon_espece <- ppales_sp[1]
+# 
+# esp_data <- reg_sp %>% 
+# #  mef_ajouter_lots() %>% 
+#   filter(esp_code_alternatif == mon_espece) %>% 
+# #  mef_ajouter_ope_date() %>% 
+#   group_by(annee, esp_code_alternatif, ope_id) %>% 
+#     summarise(effectif = sum(effectif)) %>%
+#   ungroup() %>% 
+#   mef_ajouter_surf_calc()
 ```
 
 
 ```{r}
-mon_espece <- "ANG"
-mon_dept <- "22"
-ma_variable <- densite_qd_pres_med
-
-reg_densites_an %>% 
-  filter(esp_code_alternatif == mon_espece,
-         dept == mon_dept) %>% 
-  ggplot(aes(x = annee,
-             y = densite_qd_pres_med)) +
-    geom_line() +
-    geom_point() +
-    coord_cartesian(ylim = c(0, NA))
-
-gg_temp_densite <- function(df, code_espece, dept, var_densite)
-  
-{
-  var_densite <- enquo(var_densite)
-  
-  if(is.character(dept)) {dept <- as.integer(dept)}
-  
-  
-  g <- reg_densites_an %>% 
-    filter(esp_code_alternatif == code_espece,
-           dept == mon_dept) %>% 
-    ggplot(aes(x = annee,
-               y = !!var_densite)) +
-      geom_line() +
-      geom_point() +
-      coord_cartesian(ylim = c(0, NA)) +
-      labs(title = code_espece)
-  
-  g
-}
-
-reg_densites_an %>% 
-  gg_temp_densite(code_espece = "TRF",
-                  dept = 22,
-                  var_densite = densite_qd_pres_med)
+# mon_espece <- "ANG"
+# mon_dept <- "22"
+# ma_variable <- "densite_qd_pres_med"
+# 
+# dept_densites_an %>% 
+#   filter(esp_code_alternatif == mon_espece,
+#          dept == mon_dept) %>% 
+#   ggplot(aes(x = annee,
+#              y = densite_qd_pres_med)) +
+#     geom_line() +
+#     geom_point() +
+#     coord_cartesian(ylim = c(0, NA))
+# 
+# gg_temp_densite <- function(df, code_espece, dept, var_densite)
+#   
+# {
+#   var_densite <- enquo(var_densite)
+#   
+#   if(is.character(dept)) {dept <- as.integer(dept)}
+#   
+#   
+#   g <- reg_densites_an %>% 
+#     filter(esp_code_alternatif == code_espece,
+#            dept == mon_dept) %>% 
+#     ggplot(aes(x = annee,
+#                y = !!var_densite)) +
+#       geom_line() +
+#       geom_point() +
+#       coord_cartesian(ylim = c(0, NA)) +
+#       labs(title = code_espece)
+#   
+#   g
+# }
+# 
+# reg_densites_an %>% 
+#   gg_temp_densite(code_espece = "TRF",
+#                   dept = 22,
+#                   var_densite = densite_qd_pres_med)
 
 ```
 
@@ -381,13 +398,13 @@ reg_densites_an %>%
 Evolution temporelle du nombre d'espèces identifiées dans le département.
 
 ```{r}
-richesse_dept <- effectifs_dept %>% 
-  group_by(annee) %>% 
-  mutate(n_especes = n_distinct(esp_code_alternatif))
-
-ggplot(data = richesse_dept,
-       aes(x = annee,
-           y = n_especes)) +
-  geom_line()
+# richesse_dept <- effectifs_dept %>% 
+#   group_by(annee) %>% 
+#   mutate(n_especes = n_distinct(esp_code_alternatif))
+# 
+# ggplot(data = richesse_dept,
+#        aes(x = annee,
+#            y = n_especes)) +
+#   geom_line()
 ```
 
