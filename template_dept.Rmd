@@ -36,6 +36,7 @@ reg_data <- mef_creer_passerelle() %>%
   left_join(COGiter::regions %>% select(REG,
                                         region = NOM_REG))
 
+
 ma_reg <- reg_data %>% 
   filter(dept == params$mon_dept) %>% 
   slice(1) %>% 
@@ -355,6 +356,64 @@ dept_densites_an %>%
   gg_temp_abondance(var_abondance = densite_yc_abs_moy,
                     var_espece = esp_nom_commun,
                     nb_colonnes = 4)
+```
+
+
+# Essais
+
+```{r, fig.height=9}
+reg_esp <- reg_data %>% 
+  mef_ajouter_dept() %>% 
+  mef_ajouter_ope_date() %>% 
+  mef_ajouter_lots() %>% 
+  mef_ajouter_objectif() %>% 
+  filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
+                            "RHP – Réseau Hydrobiologique Piscicole",
+                            "RRP – Réseau de Référence Pérenne")) %>% 
+  filter(annee == 2021) %>% 
+  group_by(pop_id, dept, esp_code_alternatif) %>% 
+    summarise(effectif = sum(lop_effectif))
+
+
+nb_pop <- reg_esp %>% 
+  group_by(dept) %>% 
+    summarise(n_pop = n_distinct(pop_id))
+
+n_occ <- reg_esp %>% 
+  group_by(dept, esp_code_alternatif) %>% 
+    tally()
+
+pc_occ <- n_occ %>% 
+  left_join(y = nb_pop) %>% 
+  mutate(pc_occ = n / n_pop * 100,
+         #taille_pt = pc_occ ^ 0.5,
+         dept_fct = as.factor(dept),
+         dept_fct = fct_relevel(dept_fct, "35", "56", "29", "22")#,
+         # espece = fct_infreq(esp_code_alternatif),
+         # espece = fct_relevel(espece, rev)
+         )
+
+n_dept_par_esp <- reg_esp %>% 
+  group_by(esp_code_alternatif) %>% 
+  summarise(n_dept = n_distinct(dept))
+
+
+pc_occ <- pc_occ %>% 
+  left_join(n_dept_par_esp) %>% 
+  mutate(espece = fct_reorder(esp_code_alternatif, n_dept))
+
+
+ggplot(data = pc_occ,
+       aes(x = dept_fct,
+           y = espece,
+           size = pc_occ)) +
+  geom_point(col = "darkgreen") +
+  scale_size_area() +
+  scale_x_discrete(position = 'top') +
+  labs(x = "Département",
+       y = "",
+       size = "Pourcentage d'occurrence") +
+  theme(legend.position = "bottom")
 ```
 
 
