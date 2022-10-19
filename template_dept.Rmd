@@ -6,7 +6,7 @@ output:
   bookdown::word_document2
 always_allow_html: true
 params:
-  mon_dept: "35"
+  mon_dept: "22"
 ---
 
 ```{r setup, include = FALSE}
@@ -20,7 +20,7 @@ library(aspe)
 library(tidyverse)
 library(flextable)
 
-rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data",
+rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data/processed_data",
                                          pattern = "^tables")
 
 load(rdata_tables)
