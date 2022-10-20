@@ -361,7 +361,13 @@ dept_densites_an %>%
 
 # Essais
 
-```{r, fig.height=9}
+## Les espèces par département
+
+Ici la taille des points indique le pourcentage des stations échantillonnées dans le département où l'espèce était présente (pour la dernière année de données). Les écrevisses sont indiquées en bleu.
+
+Exemple : Si, dans le 56, le chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d'occurrence dans ce département est donc de 50%. 
+
+```{r, fig.height=9, fig.width = 7, dpi=300}
 reg_esp <- reg_data %>% 
   mef_ajouter_dept() %>% 
   mef_ajouter_ope_date() %>% 
@@ -371,49 +377,73 @@ reg_esp <- reg_data %>%
                             "RHP – Réseau Hydrobiologique Piscicole",
                             "RRP – Réseau de Référence Pérenne")) %>% 
   filter(annee == 2021) %>% 
+  mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
+                                      "CCO",
+                                      esp_code_alternatif)) %>% 
   group_by(pop_id, dept, esp_code_alternatif) %>% 
-    summarise(effectif = sum(lop_effectif))
+    summarise(effectif = sum(lop_effectif)) %>% 
+  left_join(y = ref_espece %>% 
+              select(esp_code_alternatif, esp_nom_commun)) %>% 
+  mutate(esp_nom_commun = paste0(esp_nom_commun,
+                                 " (",
+                                 esp_code_alternatif,
+                                 ")"))
 
 
-nb_pop <- reg_esp %>% 
+nb_pop_par_dept <- reg_esp %>% 
   group_by(dept) %>% 
     summarise(n_pop = n_distinct(pop_id))
 
-n_occ <- reg_esp %>% 
-  group_by(dept, esp_code_alternatif) %>% 
+n_occ_par_esp_par_dept <- reg_esp %>% 
+  group_by(dept, esp_nom_commun) %>% 
     tally()
 
-pc_occ <- n_occ %>% 
-  left_join(y = nb_pop) %>% 
-  mutate(pc_occ = n / n_pop * 100,
-         #taille_pt = pc_occ ^ 0.5,
+pc_occ_par_dept <- n_occ_par_esp_par_dept %>% 
+  left_join(y = nb_pop_par_dept) %>% 
+  mutate(pc_occ = n / n_pop,
          dept_fct = as.factor(dept),
-         dept_fct = fct_relevel(dept_fct, "35", "56", "29", "22")#,
-         # espece = fct_infreq(esp_code_alternatif),
-         # espece = fct_relevel(espece, rev)
-         )
+         dept_fct = fct_relevel(dept_fct, "35", "56", "29", "22"))
 
-n_dept_par_esp <- reg_esp %>% 
-  group_by(esp_code_alternatif) %>% 
-  summarise(n_dept = n_distinct(dept))
+ordre_esp <- reg_esp %>% 
+  group_by(esp_nom_commun) %>% 
+  summarise(n_dept = n_distinct(dept),
+            n_occ = sum(effectif > 0)) %>% 
+  ungroup() %>% 
+  arrange(n_dept, n_occ)
 
+pc_occ_par_dept <- pc_occ_par_dept %>% 
+  left_join(ordre_esp) %>%
+  mutate(esp_nom_commun = factor(esp_nom_commun,
+                                 ordre_esp$esp_nom_commun),
+         couleur = ifelse(str_detect(esp_nom_commun, "Ecrev"),
+                          "blue",
+                          "black"))
 
-pc_occ <- pc_occ %>% 
-  left_join(n_dept_par_esp) %>% 
-  mutate(espece = fct_reorder(esp_code_alternatif, n_dept))
+couleurs <- pc_occ_par_dept %>% 
+  group_by(esp_nom_commun) %>% 
+  slice(1) %>% 
+  pull(couleur)
 
-
-ggplot(data = pc_occ,
+ggplot(data = pc_occ_par_dept,
        aes(x = dept_fct,
-           y = espece,
+           y = esp_nom_commun,
            size = pc_occ)) +
   geom_point(col = "darkgreen") +
-  scale_size_area() +
+  scale_size_area(labels = scales::percent) +
   scale_x_discrete(position = 'top') +
   labs(x = "Département",
        y = "",
-       size = "Pourcentage d'occurrence") +
-  theme(legend.position = "bottom")
+       size = "Taux d'occurrence") +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 8),
+        axis.text.y = element_text(colour = couleurs),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 9)) +
+  guides(size = guide_legend(nrow = 2))
+```
+
+```{r}
+
 ```
 
 
