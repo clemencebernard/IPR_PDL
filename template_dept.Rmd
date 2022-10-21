@@ -24,6 +24,11 @@ rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw
                                          pattern = "^tables")
 
 load(rdata_tables)
+
+rdata_mei <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data/processed_data",
+                                      pattern = "^mei")
+
+load(rdata_mei)
 ```
 
 ```{r}
@@ -404,10 +409,10 @@ reg_esp <- reg_data %>%
   mef_ajouter_dept() %>% 
 #  mef_ajouter_ope_date() %>% 
   mef_ajouter_lots() %>% 
-  mef_ajouter_objectif() %>% 
-  filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
-                            "RHP – Réseau Hydrobiologique Piscicole",
-                            "RRP – Réseau de Référence Pérenne")) %>% 
+  # mef_ajouter_objectif() %>% 
+  # filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
+  #                           "RHP – Réseau Hydrobiologique Piscicole",
+  #                           "RRP – Réseau de Référence Pérenne")) %>% 
   filter(annee == 2021) %>% 
   mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
                                       "CCO",
@@ -473,8 +478,50 @@ ggplot(data = pc_occ_par_dept,
         legend.title = element_text(size = 9))
 ```
 
+## Distribution en taille, pour le département
+
+En inter-annuel, pour les 10 espèces avec les effectifs les plus abondants.
+
 ```{r}
+mei <- reg_data %>% 
+  filter(dept == params$mon_dept) %>% 
+  left_join(y = mesure_individuelle %>% 
+              select(mei_id,
+                     lop_id = mei_lop_id,
+                     mei_taille,
+                     mei_poids,
+                     mei_poids_estime,
+                     mei_mesure_reelle,
+                     mei_tlo_id))
+
+mei <- mei %>% 
+  filter(mei_taille > 0) %>% 
+  mef_ajouter_lots() %>% 
+  mef_ajouter_esp()
+
+# Histo cumulé pluri-annuel : Les espèces avec mini 1000 individus sur la période
+mes_especes <- mei %>% 
+  group_by(esp_code_alternatif) %>% 
+  tally() %>% 
+  arrange(-n) %>% 
+  slice(1:10) %>% 
+  pull(esp_code_alternatif)
+
+mei <- mei %>% 
+  filter(esp_code_alternatif %in% mes_especes)
 
 ```
 
+```{r, fig.height = 8, results = 'hide'}
+map(.x = mes_especes,
+    .f = gg_dyn_esp,
+    df = mei,
+    var_id_espece = esp_code_alternatif,
+    var_id_station = pop_id,
+    seuil = 0.01,
+    graph_long_mediane = FALSE,
+    graph_mois = FALSE,
+    graph_effectif = F
+)
+```
 
