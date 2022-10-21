@@ -26,6 +26,10 @@ rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw
 load(rdata_tables)
 ```
 
+```{r}
+source(file = "fonctions.R")
+```
+
 
 ```{r}
 # création de la passerelle et ajout des codes dept et région
@@ -45,7 +49,13 @@ ma_reg <- reg_data %>%
 
 reg_data <- reg_data %>% 
   select(-REG) %>% 
-  filter(region == ma_reg)
+  filter(region == ma_reg) %>% 
+  mef_ajouter_objectif() %>% 
+  mef_ajouter_ope_date() %>% 
+  filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
+                             "RHP – Réseau Hydrobiologique Piscicole",
+                             "RRP – Réseau de Référence Pérenne"),
+         annee > 2006)
 
 # sélection des opérations, ajout date et libelle de la station
 reg_ope <- reg_data %>% 
@@ -53,29 +63,29 @@ reg_ope <- reg_data %>%
          pop_id,
          ope_id,
          dept,
-         region) %>% 
+         region,
+         annee) %>% 
   distinct() %>% 
-  mef_ajouter_ope_date() %>% 
   mef_ajouter_libelle()
 
 # nb de pêches par point
-annees_par_point <- reg_ope %>% 
-  group_by(pop_id) %>% 
-  summarise(n_annees = n_distinct(annee))
+# annees_par_point <- reg_ope %>% 
+#   group_by(pop_id) %>% 
+#   summarise(n_annees = n_distinct(annee))
 
 # filtrage des opérations sur les dates et mini 6 pêches
-reg_ope <- reg_ope %>% 
-  left_join(annees_par_point) %>% 
-  filter(n_annees > 6,
-         annee > 1999)
+# reg_ope <- reg_ope %>% 
+#   left_join(annees_par_point) %>% 
+#   filter(n_annees > 6,
+#          annee > 1999)
 ```
 
 
 ```{r}
-ma_region <- reg_data %>% 
-  filter(dept == params$mon_dept) %>% 
-  slice(1) %>% 
-  pull(region)
+# ma_region <- reg_data %>% 
+#   filter(dept == params$mon_dept) %>% 
+#   slice(1) %>% 
+#   pull(region)
 ```
 
 
@@ -186,10 +196,10 @@ On opère une suite d'opérations :
 
 ```{r}
 dept_sp <- reg_data %>%  
-  filter(ope_id %in% unique(reg_ope$ope_id),
-         dept == params$mon_dept) %>% 
+  # filter(#ope_id %in% unique(reg_ope$ope_id),
+  #        dept == params$mon_dept) %>% 
   mef_ajouter_lots() %>%  # ajout des lots
-  mef_ajouter_ope_date() %>% # ajout date
+ # mef_ajouter_ope_date() %>% # ajout date
   filter(!esp_code_alternatif %in% c("HBG", "CYP")) %>% 
   mutate(esp_code_alternatif = case_when(   # recodages à l'espèce
     esp_code_alternatif %in% c("CCU", "CCX", "CMI") ~ "CCO",
@@ -228,7 +238,7 @@ dept_sp <- dept_sp %>%
 
 # agrégation annuelle par département et par espèce
 dept_densites_an <- dept_sp %>% 
-  group_by(annee, esp_code_alternatif) %>% 
+  group_by(dept, annee, esp_code_alternatif) %>% 
     summarise(densite_qd_pres_med = median(densite, na.rm = TRUE),
               densite_qd_pres_moy = mean(densite, na.rm = TRUE),
               densite_yc_abs_moy = 1000 * sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
@@ -301,7 +311,7 @@ Calcul des dimensions des figures à afficher en fonction du nombre d'espèces d
 
 ```{r}
 fig_haut_poissons <- n_poissons_loc %>%
-  `/`(4) %>% 
+  `/`(6) %>% 
   ceiling() %>% 
   `*`(1.5) %>% 
   `+` (0.5)
@@ -331,18 +341,39 @@ Graphique.
 
 ```{r, fig.width = 10, fig.height = fig_haut_poissons}
 densites %>% 
+  filter(dept == params$mon_dept) %>% 
   aspe::gg_temp_abondance(var_abondance = densite_yc_abs_moy,
                           var_espece = esp_nom_commun,
                           nb_colonnes = 4)
 ```
 
+```{r, fig.width = 10, fig.height = fig_haut_poissons}
+densites %>% 
+  gg_temp_abondance_groupe(var_abondance = densite_yc_abs_moy,
+                           var_espece = esp_nom_commun,
+                           var_groupe = dept,
+                           groupe = 22,
+                           nb_colonnes = 4)
+```
 
+Sans transformer en log l'axe des ordonnées :
+
+```{r, fig.width = 10, fig.height = fig_haut_poissons}
+densites %>% 
+  gg_temp_abondance_groupe(var_abondance = densite_yc_abs_moy,
+                           var_espece = esp_nom_commun,
+                           var_groupe = dept,
+                           groupe = 22,
+                           nb_colonnes = 4,
+                           log_axe_y = FALSE)
+```
 
 ### Ecrevisses
 
 ```{r, fig.width = 10, fig.height = fig_haut_ecr}
 dept_densites_an %>%
-  filter(esp_nom_commun %in% ecr) %>% 
+  filter(esp_nom_commun %in% ecr,
+         dept == params$mon_dept) %>% 
   gg_temp_abondance(var_abondance = densite_yc_abs_moy,
                     var_espece = esp_nom_commun,
                     nb_colonnes = 4)
@@ -352,7 +383,8 @@ dept_densites_an %>%
 
 ```{r, fig.height = fig_haut_eee, fig.width = fig_larg_eee}
 dept_densites_an %>%
-  filter(esp_nom_commun %in% eee) %>% 
+  filter(esp_nom_commun %in% eee,
+         dept == params$mon_dept) %>% 
   gg_temp_abondance(var_abondance = densite_yc_abs_moy,
                     var_espece = esp_nom_commun,
                     nb_colonnes = 4)
@@ -363,14 +395,14 @@ dept_densites_an %>%
 
 ## Les espèces par département
 
-Ici la taille des points indique le pourcentage des stations échantillonnées dans le département où l'espèce était présente (pour la dernière année de données). Les écrevisses sont indiquées en bleu.
+Ici la taille des points indique le pourcentage des stations échantillonnées dans le département où l'espèce était présente (pour la dernière année de données). Les écrevisses sont indiquées en bleu. Les espèces sont ordonnées par nombre de départements de présence, puis par nombre total d'occurrences.
 
 Exemple : Si, dans le 56, le chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d'occurrence dans ce département est donc de 50%. 
 
 ```{r, fig.height=9, fig.width = 7, dpi=300}
 reg_esp <- reg_data %>% 
   mef_ajouter_dept() %>% 
-  mef_ajouter_ope_date() %>% 
+#  mef_ajouter_ope_date() %>% 
   mef_ajouter_lots() %>% 
   mef_ajouter_objectif() %>% 
   filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
@@ -438,8 +470,7 @@ ggplot(data = pc_occ_par_dept,
         axis.text = element_text(size = 8),
         axis.text.y = element_text(colour = couleurs),
         legend.text = element_text(size = 8),
-        legend.title = element_text(size = 9)) +
-  guides(size = guide_legend(nrow = 2))
+        legend.title = element_text(size = 9))
 ```
 
 ```{r}
