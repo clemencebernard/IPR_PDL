@@ -559,8 +559,6 @@ granu <- facies %>%
   ungroup() %>% 
   mutate(granu_dom = round(granu_dom))
 
-test <- granu %>% 
-  mef_ajouter_ope_date()
 
 # assemblage des deux tables
 mes_donnees_env <- mes_donnees_env %>% 
@@ -582,5 +580,22 @@ ggplot(data = mes_donnees_env,
   geom_line() +
   facet_wrap(~variable,
              scales = "free_y")
+```
+
+## Métriques IPR
+
+```{r}
+metrique <- operation_ipr %>% 
+  filter(opi_ope_id %in% mes_operations) %>% 
+  select(ope_id = opi_ope_id,
+         opi_ner:opi_dti) %>% 
+  mef_ajouter_ope_date() %>% 
+  select(-ope_date) %>% 
+  pivot_longer(cols = opi_ner:opi_dti,
+          names_to = "metrique", values_to = "valeur") %>% 
+  
+   group_by(annee, metrique) %>% 
+    summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
+  ungroup()
 ```
 
