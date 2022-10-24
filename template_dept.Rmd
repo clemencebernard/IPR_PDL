@@ -60,7 +60,7 @@ reg_data <- reg_data %>%
   filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
                              "RHP – Réseau Hydrobiologique Piscicole",
                              "RRP – Réseau de Référence Pérenne"),
-         annee > 2006)
+         annee > 1997)
 
 # sélection des opérations, ajout date et libelle de la station
 reg_ope <- reg_data %>% 
@@ -72,6 +72,9 @@ reg_ope <- reg_data %>%
          annee) %>% 
   distinct() %>% 
   mef_ajouter_libelle()
+
+mes_operations <- reg_ope %>% 
+  pull(ope_id)
 
 # nb de pêches par point
 # annees_par_point <- reg_ope %>% 
@@ -503,8 +506,8 @@ mei <- mei %>%
 mes_especes <- mei %>% 
   group_by(esp_code_alternatif) %>% 
   tally() %>% 
-  arrange(-n) %>% 
-  slice(1:10) %>% 
+  # arrange(-n) %>% 
+  # slice(1:10) %>% 
   pull(esp_code_alternatif)
 
 mei <- mei %>% 
@@ -523,5 +526,60 @@ map(.x = mes_especes,
     graph_mois = FALSE,
     graph_effectif = F
 )
+```
+
+## Variables environnementales
+
+```{r}
+# données environnementales simples à l'opération
+mes_donnees_env <- operation_description_peche %>% 
+  filter(odp_ope_id %in% mes_operations) %>% 
+  select(ope_id = odp_ope_id,
+         odp_conductivite,
+         odp_temperature_instantanee,
+         odp_tension,
+         odp_largeur_lame_eau
+         ) %>% 
+  left_join(y = operation_donnees_environnementales %>% 
+              select(ope_id = ode_ope_id,
+                     ode_profondeur_moyenne_station))
+
+# granulométrie dominante par opération
+granu <- facies %>% 
+  select(ope_id = fac_ode_ope_id,
+         fac_tyf_id,
+         fac_importance_relative,
+         fac_gra_id_dominante) %>% 
+  filter(ope_id %in% mes_operations) %>% 
+  group_by(ope_id) %>% 
+  summarise(granu_dom = weighted.mean(x = fac_gra_id_dominante,
+                                      w = fac_importance_relative,
+                                      na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(granu_dom = round(granu_dom))
+
+test <- granu %>% 
+  mef_ajouter_ope_date()
+
+# assemblage des deux tables
+mes_donnees_env <- mes_donnees_env %>% 
+  left_join(y = granu) %>%  
+  pivot_longer(cols = odp_conductivite:granu_dom,
+               names_to = "variable",
+               values_to = "valeur") %>% 
+  mef_ajouter_ope_date() %>% 
+  select(-ope_date) %>% 
+  group_by(annee, variable) %>% 
+    summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
+  ungroup()
+```
+
+```{r}
+ggplot(data = mes_donnees_env,
+       aes(x = annee,
+           y = mediane)) +
+  geom_line() +
+  facet_wrap(~variable,
+             scales = "free_y")
 ```
 
