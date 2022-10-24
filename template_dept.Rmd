@@ -599,3 +599,11 @@ metrique <- operation_ipr %>%
   ungroup()
 ```
 
+```{r}
+ggplot(data = metrique,
+       aes(x = annee,
+           y = mediane)) +
+  geom_line() +
+  facet_wrap(~metrique,
+             scales = "free_y")
+```
