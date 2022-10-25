@@ -507,8 +507,8 @@ mei <- mei %>%
 mes_especes <- mei %>% 
   group_by(esp_code_alternatif) %>% 
   tally() %>% 
-  # arrange(-n) %>% 
-  # slice(1:10) %>% 
+  arrange(-n) %>%
+  slice(1:10) %>%
   pull(esp_code_alternatif)
 
 mei <- mei %>% 
@@ -602,8 +602,81 @@ metrique <- operation_ipr %>%
 ```{r}
 ggplot(data = metrique,
        aes(x = annee,
-           y = mediane)) +
-  geom_line() +
+           y = mediane,
+           color = (annee < 2007))) +
+  geom_path(group = 1) +
   facet_wrap(~metrique,
-             scales = "free_y")
+             scales = "free_y") +
+  guides(color = "none") +
+  labs(x = "",
+       y = "Valeur médiane de la métrique")
 ```
+
+## Probabilité de présence des espèces
+
+```{r}
+pp <- probabilite_presence_ipr %>%
+  filter(ppi_opi_ope_id %in% mes_operations) %>%
+  rename(ope_id = ppi_opi_ope_id,
+         esp_id = ppi_esp_id) %>%
+  left_join(y = ref_espece %>%
+              select(esp_id,
+                     esp_code_alternatif,
+                     esp_nom_commun))
+
+pa <- dept_sp %>%
+  select(ope_id,
+         esp_code_alternatif,
+         effectif) %>%
+  mutate(
+    esp_code_alternatif = case_when(
+      esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
+      esp_code_alternatif == "GOU" ~ "GOX",
+      esp_code_alternatif == "VAI" ~ "PHX",
+      esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
+      TRUE ~ esp_code_alternatif
+    ),
+    pa = ifelse(
+      test = (effectif > 0),
+      yes = "Présence",
+      no = "Absence"
+    )
+  )
+
+pp <- pp %>%
+  left_join(pa) %>%
+  mutate(pa = ifelse(is.na(pa),
+                     "Absence",
+                     "Présence"))
+
+libelles <- dept_sp %>%
+  select(ope_id,
+         sta_id,
+         pop_id) %>% 
+  distinct() %>% 
+  mef_ajouter_libelle() %>% 
+  select(ope_id, pop_libelle)
+
+pp <- pp %>% 
+  left_join(libelles)
+```
+
+```{r}
+mon_operation <- 6855
+
+test <- pp %>% 
+  filter(ope_id == mon_operation)
+```
+
+```{r}
+ggplot(data = test,
+       aes(x = fct_reorder(esp_nom_commun, ppi_valeur_probabilite),
+           y = ppi_valeur_probabilite,
+           fill = pa)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "",
+       y = "Probabilité de présence") +
+  scale_y_continuous(labels = scales::percent)
+```
+
