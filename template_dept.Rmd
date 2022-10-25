@@ -408,15 +408,10 @@ Ici la taille des points indique le pourcentage des stations échantillonnées d
 
 Exemple : Si, dans le 56, le chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d'occurrence dans ce département est donc de 50%. 
 
-```{r, fig.height=9, fig.width = 7, dpi=300}
+```{r, fig.height = 9, fig.width = 7, dpi = 300}
 reg_esp <- reg_data %>% 
   mef_ajouter_dept() %>% 
-#  mef_ajouter_ope_date() %>% 
   mef_ajouter_lots() %>% 
-  # mef_ajouter_objectif() %>% 
-  # filter(obj_libelle %in% c("RCS – Réseau de Contrôle de Surveillance",
-  #                           "RHP – Réseau Hydrobiologique Piscicole",
-  #                           "RRP – Réseau de Référence Pérenne")) %>% 
   filter(annee == 2021) %>% 
   mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
                                       "CCO",
@@ -665,18 +660,35 @@ pp <- pp %>%
 mon_operation <- 6855
 
 test <- pp %>% 
-  filter(ope_id == mon_operation)
+  filter(ope_id == mon_operation) %>% 
+  mutate(esp_nom_commun = fct_reorder(esp_nom_commun, ppi_valeur_probabilite),
+         couleur = ifelse(pa == "Présence",
+                          "#1B9E77",
+                          "#D95F02")) %>% 
+  arrange(esp_nom_commun)
+
+titre <- test %>% 
+  pull(pop_libelle) %>% 
+  unique()
 ```
 
 ```{r}
 ggplot(data = test,
-       aes(x = fct_reorder(esp_nom_commun, ppi_valeur_probabilite),
+       aes(x = esp_nom_commun,
            y = ppi_valeur_probabilite,
            fill = pa)) +
   geom_bar(stat = "identity") +
   coord_flip() +
   labs(x = "",
-       y = "Probabilité de présence") +
-  scale_y_continuous(labels = scales::percent)
+       y = "Probabilité de présence",
+       title = titre,
+       fill = "") +
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 8),
+        axis.text.y = element_text(colour = test$couleur),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 9)) +
+  scale_fill_brewer(palette = "Dark2", direction = -1)
 ```
 
