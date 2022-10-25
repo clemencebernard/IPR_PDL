@@ -1,0 +1,5 @@
+# A faire
+
+# Questions
+
+- recodages : données brutes vs. recodage std vs. recodage type probas de présence ? Faire une fonction ?

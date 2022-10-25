@@ -205,10 +205,7 @@ On opère une suite d'opérations :
 
 ```{r}
 dept_sp <- reg_data %>%  
-  # filter(#ope_id %in% unique(reg_ope$ope_id),
-  #        dept == params$mon_dept) %>% 
   mef_ajouter_lots() %>%  # ajout des lots
- # mef_ajouter_ope_date() %>% # ajout date
   filter(!esp_code_alternatif %in% c("HBG", "CYP")) %>% 
   mutate(esp_code_alternatif = case_when(   # recodages à l'espèce
     esp_code_alternatif %in% c("CCU", "CCX", "CMI") ~ "CCO",
@@ -400,7 +397,7 @@ dept_densites_an %>%
 ```
 
 
-# Essais
+# A l'échelle du département
 
 ## Les espèces par département
 
@@ -476,6 +473,35 @@ ggplot(data = pc_occ_par_dept,
         legend.text = element_text(size = 8),
         legend.title = element_text(size = 9))
 ```
+
+```{r}
+data("traits_bio")
+
+rs <- reg_data %>% 
+  filter(dept == params$mon_dept) %>% 
+  mef_ajouter_lots %>% 
+  select(esp_code_alternatif,
+         annee) %>% 
+  distinct() %>% 
+  left_join(y = traits_bio %>% 
+              select(esp_code_alternatif,
+                     introduite = Introduite)) %>%
+  filter(!is.na(introduite)) %>% 
+  group_by(annee, introduite) %>% 
+  summarise(rs = n_distinct(esp_code_alternatif)) %>% 
+  ungroup() %>% 
+  mutate(espece = ifelse(test = introduite == TRUE, "Introduite", "Autochtone"))
+  
+
+ggplot(data = rs,
+       aes(x = annee,
+           y = rs, col= espece)) +
+  geom_line() + 
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(y = "Richesse spécifique", x = "", col = "Espèces") + 
+  scale_color_brewer(palette = "Set1")
+```
+
 
 ## Distribution en taille, pour le département
 
@@ -607,6 +633,8 @@ ggplot(data = metrique,
        y = "Valeur médiane de la métrique")
 ```
 
+# A l'échelle de la station
+
 ## Probabilité de présence des espèces
 
 ```{r}
@@ -631,7 +659,7 @@ pa <- dept_sp %>%
       esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
       TRUE ~ esp_code_alternatif
     ),
-    pa = ifelse(
+    presence = ifelse(
       test = (effectif > 0),
       yes = "Présence",
       no = "Absence"
@@ -640,9 +668,12 @@ pa <- dept_sp %>%
 
 pp <- pp %>%
   left_join(pa) %>%
-  mutate(pa = ifelse(is.na(pa),
+  mutate(presence = ifelse(is.na(presence),
                      "Absence",
-                     "Présence"))
+                     presence)) %>% 
+  left_join(operation %>% 
+              select(ope_id, 
+                     pop_id = ope_pop_id))
 
 libelles <- dept_sp %>%
   select(ope_id,
@@ -659,15 +690,21 @@ pp <- pp %>%
 ```{r}
 mon_operation <- 6855
 
+mon_point <- pp %>% 
+  filter(ope_id == mon_operation) %>% 
+  pull(pop_id) %>% 
+  unique()
+  
+
 test <- pp %>% 
   filter(ope_id == mon_operation) %>% 
   mutate(esp_nom_commun = fct_reorder(esp_nom_commun, ppi_valeur_probabilite),
-         couleur = ifelse(pa == "Présence",
+         couleur = ifelse(presence == "Présence",
                           "#1B9E77",
                           "#D95F02")) %>% 
   arrange(esp_nom_commun)
 
-titre <- test %>% 
+ma_station <- test %>% 
   pull(pop_libelle) %>% 
   unique()
 ```
@@ -676,12 +713,12 @@ titre <- test %>%
 ggplot(data = test,
        aes(x = esp_nom_commun,
            y = ppi_valeur_probabilite,
-           fill = pa)) +
+           fill = presence)) +
   geom_bar(stat = "identity") +
   coord_flip() +
   labs(x = "",
        y = "Probabilité de présence",
-       title = titre,
+       title = ma_station,
        fill = "") +
   scale_y_continuous(labels = scales::percent) +
   theme(legend.position = "bottom",
@@ -690,5 +727,31 @@ ggplot(data = test,
         legend.text = element_text(size = 8),
         legend.title = element_text(size = 9)) +
   scale_fill_brewer(palette = "Dark2", direction = -1)
+```
+
+```{r}
+densites_sta <- dept_sp %>% 
+    filter(pop_id == mon_point)
+
+esp_sel <- densites_sta %>% 
+  group_by(esp_code_alternatif) %>% 
+  summarise(dens = sum(densite, 
+                       na.rm = TRUE)) %>% 
+  filter(dens > 0) %>% 
+  pull(esp_code_alternatif)
+
+densites_sta <- densites_sta %>% 
+  filter(esp_code_alternatif %in% esp_sel) %>% 
+  mutate(annee = as.integer(annee))
+
+ggplot(data = densites_sta,
+       aes(x = annee,
+                         y = densite)) + 
+  geom_line() + 
+  facet_wrap(~ esp_code_alternatif, 
+             scales = "free_y") +
+ scale_x_continuous(labels = scales::label_number(big.mark = "",
+                                                  accuracy = 1))
+
 ```
 
