@@ -79,8 +79,3 @@ gg_temp_abondance_groupe <- function(df,
 }
 
 
-############################################
-
-
-
-

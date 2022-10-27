@@ -1,5 +1,6 @@
 ---
-title: "Bilan des pêches dans le `r params$mon_dept`"
+title: "Synthèse des pêches d'échantillonnage en rivière, année `r substr(Sys.time(), 1, 4)`"
+subtitle: "Département : `r params$mon_dept`"
 author: "OFB - DR Bretagne"
 date: "`r format(Sys.time(), 'Le %d %B %Y')`"
 output:
@@ -17,7 +18,10 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 
 ```{r}
+# devtools::install_github("pascalirz/aspe")
+# devtools::install_github("pascalirz/ggplotExtra")
 library(aspe)
+library(ggplotExtra)
 library(tidyverse)
 library(flextable)
 
@@ -558,13 +562,15 @@ mes_donnees_env <- operation_description_peche %>%
   filter(odp_ope_id %in% mes_operations) %>% 
   select(ope_id = odp_ope_id,
          odp_conductivite,
-         odp_temperature_instantanee,
          odp_tension,
-         odp_largeur_lame_eau
+         odp_intensite,
+         odp_temperature_instantanee,
+         odp_largeur_lame_eau,
+         odp_longueur
          ) %>% 
   left_join(y = operation_donnees_environnementales %>% 
               select(ope_id = ode_ope_id,
-                     ode_profondeur_moyenne_station))
+                     profondeur_moyenne = ode_profondeur_moyenne_station))
 
 # granulométrie dominante par opération
 granu <- facies %>% 
@@ -591,16 +597,30 @@ mes_donnees_env <- mes_donnees_env %>%
   select(-ope_date) %>% 
   group_by(annee, variable) %>% 
     summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(variable = str_replace(string = variable,
+                                pattern = "odp_",
+                                replacement = ""))
 ```
 
 ```{r}
-ggplot(data = mes_donnees_env,
-       aes(x = annee,
-           y = mediane)) +
-  geom_line() +
-  facet_wrap(~variable,
-             scales = "free_y")
+# ggplot(data = mes_donnees_env,
+#        aes(x = annee,
+#            y = mediane)) +
+#   geom_line() +
+#   facet_wrap(~variable,
+#              scales = "free_y")
+```
+```{r}
+ggplotExtra::gg_lattice_line(
+  df = mes_donnees_env,
+  var_x = annee,
+  var_y = mediane,
+  var_lattice = variable,
+  threshold_x = 2007,
+  lab_y = "Valeur médiane de la variable",
+  free_y = TRUE
+)
 ```
 
 ## Métriques IPR
@@ -617,21 +637,46 @@ metrique <- operation_ipr %>%
   
    group_by(annee, metrique) %>% 
     summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(metrique = str_replace(metrique,
+                                pattern = "opi_",
+                                replacement = ""),
+         metrique = str_to_upper(metrique))
 ```
 
 ```{r}
-ggplot(data = metrique,
-       aes(x = annee,
-           y = mediane,
-           color = (annee < 2007))) +
-  geom_path(group = 1) +
-  facet_wrap(~metrique,
-             scales = "free_y") +
-  guides(color = "none") +
-  labs(x = "",
-       y = "Valeur médiane de la métrique")
+# ggplot(data = metrique,
+#        aes(x = annee,
+#            y = mediane,
+#            color = (annee < 2007))) +
+#   geom_path(group = 1) +
+#   facet_wrap(~metrique,
+#              scales = "free_y") +
+#   guides(color = "none") +
+#   labs(x = "",
+#        y = "Valeur médiane de la métrique")
 ```
+
+```{r}
+# ggplotExtra::gg_lattice_line(
+#   df = metrique,
+#   var_x = annee,
+#   var_y = mediane,
+#   var_lattice = metrique,
+#   threshold_x = 2007,
+#   lab_y = "Valeur médiane de la métrique"
+# )
+```
+```{r}
+ggplotExtra::gg_lattice_ipr(
+  df = metrique,
+  var_y = mediane,
+  var_lattice = metrique,
+  metriques = TRUE,
+  interactif = TRUE
+)
+```
+
 
 # A l'échelle de la station
 
