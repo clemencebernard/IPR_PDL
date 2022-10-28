@@ -1,5 +1,5 @@
 ---
-title: "Synthèse des pêches d'échantillonnage en rivière, année `r substr(Sys.time(), 1, 4)`"
+title: "Synthèse des pêches d'échantillonnage en rivière, année `r params$mon_annee`"
 subtitle: "Département : `r params$mon_dept`"
 author: "OFB - DR Bretagne"
 date: "`r format(Sys.time(), 'Le %d %B %Y')`"
@@ -8,6 +8,7 @@ output:
 always_allow_html: true
 params:
   mon_dept: "22"
+  mon_annee: "2022"
 ---
 
 ```{r setup, include = FALSE}
@@ -80,25 +81,6 @@ reg_ope <- reg_data %>%
 
 mes_operations <- reg_ope %>% 
   pull(ope_id)
-
-# nb de pêches par point
-# annees_par_point <- reg_ope %>% 
-#   group_by(pop_id) %>% 
-#   summarise(n_annees = n_distinct(annee))
-
-# filtrage des opérations sur les dates et mini 6 pêches
-# reg_ope <- reg_ope %>% 
-#   left_join(annees_par_point) %>% 
-#   filter(n_annees > 6,
-#          annee > 1999)
-```
-
-
-```{r}
-# ma_region <- reg_data %>% 
-#   filter(dept == params$mon_dept) %>% 
-#   slice(1) %>% 
-#   pull(region)
 ```
 
 
@@ -413,7 +395,7 @@ Exemple : Si, dans le 56, le chevaine a été capturé sur 8 des 16 stations pro
 reg_esp <- reg_data %>% 
   mef_ajouter_dept() %>% 
   mef_ajouter_lots() %>% 
-  filter(annee == 2021) %>% 
+  filter(annee == params$mon_annee) %>% 
   mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
                                       "CCO",
                                       esp_code_alternatif)) %>% 
@@ -478,6 +460,79 @@ ggplot(data = pc_occ_par_dept,
         legend.title = element_text(size = 9))
 ```
 
+## Abondance numérique
+
+```{r}
+reg_esp %>%
+  group_by(esp_nom_commun) %>% 
+  summarise(n = sum(effectif)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = fct_reorder(esp_nom_commun, n),
+             y = n)) +
+  geom_bar(stat = "identity",
+           fill = "darkgreen") +
+  coord_flip() +
+  labs(x = "",
+       y = "Effectif capturé")
+```
+
+
+## Abondance massique
+
+```{r}
+mei <- reg_data %>%
+  filter(dept == params$mon_dept) %>%
+  mef_ajouter_mei() %>%
+  mef_ajouter_lots() %>%
+  mef_ajouter_type_longueur() %>%
+  mef_ajouter_esp() %>%
+  select(
+    mei_id,
+    sta_id,
+    pop_id,
+    lop_id,
+    esp_code_alternatif,
+    mei_taille,
+    mei_poids,
+    mei_poids_estime,
+    mei_mesure_reelle,
+    tlo_libelle
+  )
+
+data("taille_poids")
+taille_poids <- taille_poids %>% 
+  group_by(esp_code_alternatif, esp_nom_latin, tlo_libelle) %>% 
+  arrange(source) %>% 
+  slice(1)
+  
+
+# nb vérifier qu'on a bien les tailles pour tous les poissons avant d'appliquer la taille-poids
+# poids <- mei %>% 
+#   left_join(y = taille_poids) %>% 
+#   mutate(mei_taille = mei_taille / 10,   # passage en cm
+#          poids_tp = a * (mei_taille ^ b),
+#          erreur_abs = poids_tp - mei_poids,
+#          erreur_rel = erreur_abs / poids_tp) %>% 
+#   mutate(
+#          poids_retenu = case_when(
+#            mei_poids > 0 ~ mei_poids,
+#            mei_poids_estime > 0 ~ mei_poids_estime,
+#            TRUE ~ poids_tp#,
+#           # TRUE ~ NA_real
+#          )) 
+# 
+# test <- poids %>% 
+#   filter(is.na(poids_tp)) %>% 
+#   select(esp_code_alternatif, tlo_libelle) %>% 
+#   distinct()
+  
+  
+```
+
+
+
+## Richesse spécifique
+
 ```{r}
 data("traits_bio")
 
@@ -507,36 +562,28 @@ ggplot(data = rs,
 ```
 
 
-## Distribution en taille, pour le département
+
+
+## Distribution en taille pour les principales espèces
 
 En inter-annuel, pour les 10 espèces avec les effectifs les plus abondants.
 
 ```{r}
-mei <- reg_data %>% 
-  filter(dept == params$mon_dept) %>% 
-  left_join(y = mesure_individuelle %>% 
-              select(mei_id,
-                     lop_id = mei_lop_id,
-                     mei_taille,
-                     mei_poids,
-                     mei_poids_estime,
-                     mei_mesure_reelle,
-                     mei_tlo_id))
-
-mei <- mei %>% 
+# on part des mesures individuelles
+longueurs <- mei %>% 
   filter(mei_taille > 0) %>% 
   mef_ajouter_lots() %>% 
   mef_ajouter_esp()
 
 # Histo cumulé pluri-annuel : Les espèces avec mini 1000 individus sur la période
-mes_especes <- mei %>% 
+mes_especes <- longueurs %>% 
   group_by(esp_code_alternatif) %>% 
   tally() %>% 
   arrange(-n) %>%
   slice(1:10) %>%
   pull(esp_code_alternatif)
 
-mei <- mei %>% 
+longueurs <- longueurs %>% 
   filter(esp_code_alternatif %in% mes_especes)
 
 ```
@@ -544,7 +591,7 @@ mei <- mei %>%
 ```{r, fig.height = 8, results = 'hide'}
 map(.x = mes_especes,
     .f = gg_dyn_esp,
-    df = mei,
+    df = longueurs,
     var_id_espece = esp_code_alternatif,
     var_id_station = pop_id,
     seuil = 0.01,
@@ -774,6 +821,8 @@ ggplot(data = test,
   scale_fill_brewer(palette = "Dark2", direction = -1)
 ```
 
+## densité numérique 
+
 ```{r}
 densites_sta <- dept_sp %>% 
     filter(pop_id == mon_point)
@@ -797,6 +846,12 @@ ggplot(data = densites_sta,
              scales = "free_y") +
  scale_x_continuous(labels = scales::label_number(big.mark = "",
                                                   accuracy = 1))
+
+```
+
+## densité pondérale
+
+```{r}
 
 ```
 
