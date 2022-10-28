@@ -492,6 +492,7 @@ mei <- reg_data %>%
     pop_id,
     lop_id,
     esp_code_alternatif,
+    esp_nom_commun,
     mei_taille,
     mei_poids,
     mei_poids_estime,
@@ -500,35 +501,65 @@ mei <- reg_data %>%
   )
 
 data("taille_poids")
+
 taille_poids <- taille_poids %>% 
-  group_by(esp_code_alternatif, esp_nom_latin, tlo_libelle) %>% 
+  group_by(esp_code_alternatif,
+    #       esp_nom_latin_tp = esp_nom_latin,
+           tlo_libelle) %>% 
   arrange(source) %>% 
   slice(1)
   
 
 # nb vérifier qu'on a bien les tailles pour tous les poissons avant d'appliquer la taille-poids
-# poids <- mei %>% 
-#   left_join(y = taille_poids) %>% 
-#   mutate(mei_taille = mei_taille / 10,   # passage en cm
-#          poids_tp = a * (mei_taille ^ b),
-#          erreur_abs = poids_tp - mei_poids,
-#          erreur_rel = erreur_abs / poids_tp) %>% 
-#   mutate(
-#          poids_retenu = case_when(
-#            mei_poids > 0 ~ mei_poids,
-#            mei_poids_estime > 0 ~ mei_poids_estime,
-#            TRUE ~ poids_tp#,
-#           # TRUE ~ NA_real
-#          )) 
-# 
-# test <- poids %>% 
-#   filter(is.na(poids_tp)) %>% 
-#   select(esp_code_alternatif, tlo_libelle) %>% 
-#   distinct()
-  
-  
+# combinaisons espèces - type de longueur absentes de la table de conversion
+tp_manquantes <- mei %>% 
+  select(esp_code_alternatif, tlo_libelle) %>% 
+  distinct() %>% 
+  left_join(y = taille_poids) %>% 
+  filter(is.na(a))
+# on voit que le pb est que pas mal d'espèces n'ont pas de relation en longueur fourche
+# on approxime par la longueur totale
+esp_tp_manquantes <- tp_manquantes %>% 
+  pull(esp_code_alternatif)
+
+poids <- mei %>%
+  mutate(tlo_libelle = ifelse(esp_code_alternatif %in% esp_tp_manquantes &
+                                tlo_libelle == "Fourche",
+         "Totale",
+         tlo_libelle))
+
+poids <- poids %>% 
+  left_join(y = taille_poids,
+            by = c("esp_code_alternatif", "tlo_libelle")) %>%
+  mutate(mei_taille = mei_taille / 10,   # passage en cm
+         poids_tp = a * (mei_taille ^ b),
+         erreur_abs = poids_tp - mei_poids,
+         erreur_rel = erreur_abs / poids_tp)
+
+# test <- poids %>%
+#   filter(is.na(poids_tp)) %>%
+#   group_by(esp_code_alternatif, esp_nom_latin, tlo_libelle) %>%
+#   tally()
+
+poids_dept <- poids %>% 
+  group_by(esp_nom_commun) %>% 
+  summarise(poids = sum(poids_tp, na.rm = TRUE),
+            .groups = "drop")
 ```
 
+```{r}
+ggplot(data = poids_dept,
+       aes(x = fct_reorder(esp_nom_commun, poids),
+           y = poids)) +
+  geom_bar(stat = "identity",
+           fill = "darkgreen") +
+  coord_flip() +
+  scale_y_continuous(labels = scales::label_number(big.mark = "",
+                                                  accuracy = 1,
+                                                  scale = 1e-3)) +
+  labs(x = "",
+       y = "Biomasse capturée (kg)")
+```
 
 
 ## Richesse spécifique
@@ -658,7 +689,7 @@ mes_donnees_env <- mes_donnees_env %>%
 #   facet_wrap(~variable,
 #              scales = "free_y")
 ```
-```{r}
+```{r, fig.width = 8}
 ggplotExtra::gg_lattice_line(
   df = mes_donnees_env,
   var_x = annee,
@@ -714,7 +745,7 @@ metrique <- operation_ipr %>%
 #   lab_y = "Valeur médiane de la métrique"
 # )
 ```
-```{r}
+```{r, fig.width = 8}
 ggplotExtra::gg_lattice_ipr(
   df = metrique,
   var_y = mediane,
