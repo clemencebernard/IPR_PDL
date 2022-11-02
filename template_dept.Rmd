@@ -38,7 +38,7 @@ load(rdata_mei)
 ```
 
 ```{r}
-source(file = "fonctions.R")
+source(file = "01_fonctions.R")
 ```
 
 
@@ -491,6 +491,8 @@ mei <- reg_data %>%
     sta_id,
     pop_id,
     lop_id,
+    ope_date,
+    annee,
     esp_code_alternatif,
     esp_nom_commun,
     mei_taille,
@@ -751,7 +753,7 @@ ggplotExtra::gg_lattice_ipr(
   var_y = mediane,
   var_lattice = metrique,
   metriques = TRUE,
-  interactif = TRUE
+  interactif = FALSE
 )
 ```
 
