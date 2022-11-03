@@ -24,12 +24,12 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(aspe)
 library(tidyverse)
 
-rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data/processed_data",
+rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data/rdata",
                                          pattern = "^tables")
 
 load(rdata_tables)
 
-rdata_mei <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data/processed_data",
+rdata_mei <- misc_nom_dernier_fichier(repertoire = "../../../projets/ASPE/raw_data/rdata",
                                       pattern = "^mei")
 
 load(rdata_mei)
@@ -511,20 +511,6 @@ reg_metrique <- operation_ipr %>%
   filter(opi_ope_id %in% mes_ope_reg) %>%
   rename(ope_id = opi_ope_id) %>% 
   mef_ajouter_ope_date()
-  # select(ope_id = opi_ope_id,
-  #        opi_ner:opi_dti) %>% 
-  # mef_ajouter_ope_date() %>% 
-  # select(-ope_date) %>% 
-  # pivot_longer(cols = opi_ner:opi_dti,
-  #         names_to = "metrique", values_to = "valeur") %>% 
-  # 
-  #  group_by(annee, metrique) %>% 
-  #   summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
-  # ungroup() %>% 
-  # mutate(metrique = str_replace(metrique,
-  #                               pattern = "opi_",
-  #                               replacement = ""),
-  #        metrique = str_to_upper(metrique))
 ```
 
 ```{r}
