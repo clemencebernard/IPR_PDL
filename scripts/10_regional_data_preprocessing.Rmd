@@ -8,13 +8,12 @@ output:
 always_allow_html: true
 params:
   mon_dept: "22"
-  mon_annee: "2021"
+  mon_annee: "2022"
 ---
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
-
 
 
 
@@ -34,6 +33,8 @@ rdata_mei <- misc_nom_dernier_fichier(repertoire = "../../../../projets/ASPE/raw
 
 load(rdata_mei)
 ```
+
+
 
 ```{r}
 # création de la passerelle et ajout des codes dept et région
@@ -66,6 +67,11 @@ reg_data <- reg_data %>%
     annee > 1997
   )
 
+mes_pts <- reg_data %>% 
+  filter(annee == params$mon_annee | annee == (as.numeric(params$mon_annee) - 1)) %>% 
+  pull(pop_id) %>% 
+  unique()
+
 # sélection des opérations, ajout date et libelle de la station
 reg_ope <- reg_data %>% 
   select(sta_id,
@@ -74,6 +80,7 @@ reg_ope <- reg_data %>%
          dept,
          region,
          annee) %>% 
+  filter(pop_id %in% mes_pts) %>% 
   distinct() %>% 
   mef_ajouter_libelle()
 
