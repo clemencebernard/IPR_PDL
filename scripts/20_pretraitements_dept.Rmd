@@ -146,7 +146,7 @@ Ce graphique reprend notes IPR calculées depuis 2007, date à laquelle le proto
 Les points correspondent à la note des IPR de la station par année. 
 
 
-```{r, fig.width = 10, fig.height = reg_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(2)}
+```{r, fig.width = 10, fig.height = reg_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(4) %>% ceiling()%>% `*`(2.5)%>% `+`(1)}
 
 
 dept_ipr %>%
@@ -486,6 +486,13 @@ ggplot(data = poids_dept,
 
 ## Richesse spécifique
 
+La courbe bleue représente la variation du nombre d’espèces indigènes par an.
+
+En rouge, ce sont les effectifs d’espèces allochtones par an.
+
+Les données précédentes à 2007 sont en pointillé, car les réseaux n'étaient pas stabilisés et le protocole d'échantillonnages différait. 
+
+
 ```{r, fig.height=2.5, fig.width=5}
 reg_rs %>% 
   filter(dept == params$mon_dept) %>% 
@@ -603,6 +610,21 @@ ggplotExtra::gg_lattice_line(
 ```
 
 ## Métriques IPR
+
+Le calcul de la note IPR se fait sur 7 métriques, reposant sur les affinités écologiques des poissons et sur leur densité.
+
+En fond, la couleur correspond à la note qualitative de la métrique, en bleu « excellent » rouge « très mauvais ». 
+
+La ligne rouge correspond à la médiane des données récoltées sur l’ensemble des stations depuis 1997 dans le département.
+
+DII = Densité d’individus invertivores (qui se nourrit d’invertébré)   
+DIO = Densité d’individu omnivores (mange de tout)   
+DIT = Densité d’individus tolérants   
+DTI = DEnsité total d'individus   
+NTE = Nombre total d’espèces    
+NER = Nombre d’espèces rhéophiles (espèces de zones à courant)   
+NEL = Nombre d’espèces lithophiles (Qui se reproduit sur un substrat rocheux)  
+
 
 ```{r}
 dept_metrique <- reg_metrique %>% 
