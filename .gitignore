@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # output files
 /output/
+
+# docx_files
+/scripts/*.docx

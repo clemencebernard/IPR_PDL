@@ -25,11 +25,11 @@ library(aspe)
 library(ggplotExtra)
 library(tidyverse)
 
-load(file = "processed_data/reg_data.RData")
+load(file = "../processed_data/reg_data.RData")
 ```
 
 ```{r}
-source(file = "01_fonctions.R")
+source(file = "../R/01_fonctions.R")
 ```
 
 
