@@ -73,6 +73,7 @@ mes_pts <- reg_data %>%
   unique()
 
 # sélection des opérations, ajout date et libelle de la station
+# les stations qui ne sont pas échantillonées sur les deux dernières années sont exclus
 reg_ope <- reg_data %>% 
   select(sta_id,
          pop_id,
