@@ -64,9 +64,8 @@ Ce Rapport présente l’ensemble des pêches réalisées au titre des réseaux,
 
 - RHP : Le Réseau Hydrobiologique Piscicole vise à disposer chaque année d'un état des peuplements piscicoles, à caractériser les variations interannuelles et les tendances, à évaluer les conséquences des évènements naturels exceptionnels et à assurer une veille écologique des espèces.
 
-Dans un premier temps, les résultats seront déclinés à l’échelle Régionale. Cela permet d’avoir une vue d’ensemble de l’évolution de la qualité de l’eau et de la population piscicole bretonne.
 
-Ensuite, nous passons à une échelle départementale. Les graphiques regroupent l’ensemble des données réunies sur chaque station du `r  params$mon_dept` depuis 1997 (pour les données les plus anciennes). La dimension temporelle permet de mettre en valeur la fluctuation de la qualité de l’eau, de l’ichtyofaune et des paramètres physiques et environnementaux.
+Dans une premier temps les résultats sont déclinées à une échelle départementale. Les graphiques regroupent l’ensemble des données réunies sur chaque station du `r  params$mon_dept` depuis 1997 (pour les données les plus anciennes). La dimension temporelle permet de mettre en valeur la fluctuation de la qualité de l’eau, de l’ichtyofaune et des paramètres physiques et environnementaux.
 
 Pour finir, les stations sont décrites une à une par la fiche station ASPE. Pour une meilleure lecture, les données sont illustrées par des graphiques permettant de présenter la classe de qualité IPR accompagnée de variables aidant sont interprétation.
 
@@ -384,6 +383,13 @@ reg_densites_an_poissons_loc %>%
 
 ## Abondance numérique
 
+Sur ce premier histogramme, on peut voir le nombre de fois où une espèce a été observée dans le département pour l’année 2022. 
+
+Sur le deuxième, c’est la biomasse spécifique totale qui est mise en évidence pour la saison de pêche 2022. 
+
+Il est intéressant de mettre en parallèle ces deux tableaux, car cela permet de se rendre compte que ce ne sont pas toujours les espèces les plus abondantes qui représentent le plus gros volume sur l’ensemble des stations et inversement.  
+
+
 ```{r}
 reg_effectif_mon_annee %>%
   filter(dept == params$mon_dept) %>% 
@@ -512,6 +518,15 @@ reg_rs %>%
 
 En inter-annuel, pour les 10 espèces avec les effectifs les plus abondants.
 
+Seules les 10 espèces les plus abondantes sont représentées. En effet pour calculer des classes de tailles représentatives et discerner les générations, il faut un jeu de donnée suffisamment important.  
+
+Les histogrammes regroupent les effectifs d’une espèce par classe de taille sur une année. En procédant ainsi, on peut identifier différentes générations qui correspondent aux piques (1 an, 1+, 2+). 
+
+En rouge, il s’agit de la médiane, indiquant la taille moyenne qui permet également d’estimer l’âge moyen de la population. 
+
+Remarque : Les classes de tailles sont adaptées pour chaque espèce. Elles ont été définies par … (demander à pascal)
+
+
 ```{r}
 # on part des mesures individuelles
 longueurs <- reg_mei %>% 
@@ -545,6 +560,48 @@ map(.x = mes_especes,
 ```
 
 ## Variables environnementales
+
+Ces quatre graphiques présentent l’évolution des paramètres abiotiques environnementaux qui caractérisent la station. La ligne rouge est la médiane de l’ensemble des données des stations du département qui ont été saisies depuis 1997.
+
+Pour l’ensemble de ces graphiques, la courbe représente la médiane des différents paramètres. 
+Largeur en eau : L’axe des ordonnées est renseigné en mètre.
+
+Profondeur : L’axe des ordonnées est en centimètre.
+
+Température : L’axe des ordonnées est en degrés Celsius.
+
+Granulométrie : L’axe des ordonnées va de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
+
+0 = Granulométrie inconnue   
+1 = Argile (<3,9mm)   
+2 = Limons (3,9 à 62,5 mm)   
+3 = Sables fins (62,5 à 0,5 mm)   
+4 = Sables grossier (0,5 à 2 mm)   
+5 = Gravier (2 à 16 mm)   
+6 = Cailloux fins (16 à 32 mm)   
+7 = Cailloux grossier (32 à 64 mm)   
+8 = Pierres fines (64 à 128 mm)   
+9 = Pierres grossières (128 à 256 mm)   
+10 = Blocs (256 à 1024 mm)   
+11 = Rochers (>1 m – substrat immergé avec protubérances)    
+12 = Dalles (>1 m – substrat immergé sans protubérances)    
+
+
+
+
+Ces trois graphiques présentent l’évolution des paramètres liés à l’électricité. 
+
+Pour l’ensemble de ces graphiques, la courbe représente la médiane des différents paramètres. La ligne rouge est la médiane des données réalisées sur le département depuis 1997.
+
+Conductivité : Ici, il s’agit de la capacité de l’eau de la station à conduire le courant électrique (chargement en ions). Elle se mesure en µS/cm (microsiemens/centimètre). Ces valeurs se retrouvent sur l’axe des ordonnées.    
+
+Tension : L’axe des ordonnées est en volt.   
+
+Puissance : Sur l’axe des ordonnées elle s’exprime en KVA (Kilovoltampère), c’est la puissance maximale de l’installation électrique.     
+
+Intensité : L’axe des ordonnées est en ampère.    
+
+
 
 ```{r}
 # données environnementales simples à l'opération
