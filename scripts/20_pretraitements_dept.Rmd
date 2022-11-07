@@ -69,6 +69,21 @@ Dans une premier temps les résultats sont déclinées à une échelle départem
 
 Pour finir, les stations sont décrites une à une par la fiche station ASPE. Pour une meilleure lecture, les données sont illustrées par des graphiques permettant de présenter la classe de qualité IPR accompagnée de variables aidant sont interprétation.
 
+```{r}
+mon_dept_geo <- mes_depts_geo %>% 
+         filter(DEP == params$mon_dept)
+
+mes_pts_dept_geo <- mes_pts_reg_geo %>% 
+  sf::st_join(mon_dept_geo) %>% 
+  filter(!is.na(DEP))
+
+ggplot(data = mon_dept_geo) +
+  geom_sf() +
+  geom_sf(data = mes_pts_dept_geo,
+          col = "red")
+```
+
+
 
 # IPR
 
@@ -564,19 +579,14 @@ map(.x = mes_especes,
 Ces quatre graphiques présentent l’évolution des paramètres abiotiques environnementaux qui caractérisent la station. La ligne rouge est la médiane de l’ensemble des données des stations du département qui ont été saisies depuis 1997.
 
 Pour l’ensemble de ces graphiques, la courbe représente la médiane des différents paramètres. 
-Largeur en eau : L’axe des ordonnées est renseigné en mètre.
 
-Profondeur : L’axe des ordonnées est en centimètre.
-
-Température : L’axe des ordonnées est en degrés Celsius.
-
-Granulométrie : L’axe des ordonnées va de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
+- Granulométrie : L’axe des ordonnées va de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
 
 0 = Granulométrie inconnue   
-1 = Argile (<3,9mm)   
-2 = Limons (3,9 à 62,5 mm)   
-3 = Sables fins (62,5 à 0,5 mm)   
-4 = Sables grossier (0,5 à 2 mm)   
+1 = Argile (<0,0039mm)   
+2 = Limons (0,0039 à 0,0625 mm)   
+3 = Sables fins (0,0625 à 2 mm)   
+4 = Sables grossier (2 à 5 mm)   
 5 = Gravier (2 à 16 mm)   
 6 = Cailloux fins (16 à 32 mm)   
 7 = Cailloux grossier (32 à 64 mm)   
@@ -584,79 +594,45 @@ Granulométrie : L’axe des ordonnées va de 0 à 12. Chacun des chiffres corre
 9 = Pierres grossières (128 à 256 mm)   
 10 = Blocs (256 à 1024 mm)   
 11 = Rochers (>1 m – substrat immergé avec protubérances)    
-12 = Dalles (>1 m – substrat immergé sans protubérances)    
+12 = Dalles (>1 m – substrat immergé sans protubérances)  
+
+- Largeur mouillée : L’axe des ordonnées est renseigné en mètre (m).
+- Longueur station : L'axe des ordonnée est renseigné en mètre (m).
+- Profondeur : L’axe des ordonnées est en centimètre (cm).
+- Température : L’axe des ordonnées est en degrés Celsius (°C).
+
+  
 
 
+```{r, fig.width = 9, dpi = 300}
+dept_donnees_env <- reg_donnees_env %>% 
+  filter(dept == params$mon_dept) 
 
-
-Ces trois graphiques présentent l’évolution des paramètres liés à l’électricité. 
-
-Pour l’ensemble de ces graphiques, la courbe représente la médiane des différents paramètres. La ligne rouge est la médiane des données réalisées sur le département depuis 1997.
-
-Conductivité : Ici, il s’agit de la capacité de l’eau de la station à conduire le courant électrique (chargement en ions). Elle se mesure en µS/cm (microsiemens/centimètre). Ces valeurs se retrouvent sur l’axe des ordonnées.    
-
-Tension : L’axe des ordonnées est en volt.   
-
-Puissance : Sur l’axe des ordonnées elle s’exprime en KVA (Kilovoltampère), c’est la puissance maximale de l’installation électrique.     
-
-Intensité : L’axe des ordonnées est en ampère.    
-
-
-
-```{r}
-# données environnementales simples à l'opération
-# mes_donnees_env <- operation_description_peche %>% 
-#   filter(odp_ope_id %in% dept_ope) %>% 
-#   select(ope_id = odp_ope_id,
-#          odp_conductivite,
-#          odp_tension,
-#          odp_intensite,
-#          odp_temperature_instantanee,
-#          odp_largeur_lame_eau,
-#          odp_longueur
-#          ) %>% 
-#   left_join(y = operation_donnees_environnementales %>% 
-#               select(ope_id = ode_ope_id,
-#                      profondeur_moyenne = ode_profondeur_moyenne_station))
-
-# granulométrie dominante par opération
-# granu <- facies %>% 
-#   select(ope_id = fac_ode_ope_id,
-#          fac_tyf_id,
-#          fac_importance_relative,
-#          fac_gra_id_dominante) %>% 
-#   filter(ope_id %in% mes_operations) %>% 
-#   group_by(ope_id) %>% 
-#   summarise(granu_dom = weighted.mean(x = fac_gra_id_dominante,
-#                                       w = fac_importance_relative,
-#                                       na.rm = TRUE)) %>% 
-#   ungroup() %>% 
-#   mutate(granu_dom = round(granu_dom))
-
-
-# assemblage des deux tables
-# mes_donnees_env <- mes_donnees_env %>% 
-#   left_join(y = granu) %>%  
-#   pivot_longer(cols = odp_conductivite:granu_dom,
-#                names_to = "variable",
-#                values_to = "valeur") %>% 
-#   mef_ajouter_ope_date() %>% 
-#   select(-ope_date) %>% 
-#   group_by(annee, variable) %>% 
-#     summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
-#   ungroup() %>% 
-#   mutate(variable = str_replace(string = variable,
-#                                 pattern = "odp_",
-#                                 replacement = ""))
+dept_donnees_env %>% 
+  filter(!(variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
+  ggplotExtra::gg_lattice_line(
+  var_x = annee,
+  var_y = mediane,
+  var_lattice = variable,
+  threshold_x = 2007,
+  lab_y = "Valeur médiane de la variable",
+  free_y = TRUE
+)
 ```
 
+## Variables électriques
 
-```{r, fig.width = 8}
-dept_donnees_env <- reg_donnees_env %>% 
-  filter(dept == params$mon_dept)
-  
-ggplotExtra::gg_lattice_line(
-  df = dept_donnees_env,
+Ces graphiques présentent l’évolution des paramètres liés à l’électricité. La courbe représente la médiane des différents paramètres. La ligne rouge est la médiane des données réalisées sur le département depuis 1997.
+
+- Conductivité : Capacité de l’eau de la station à conduire le courant électrique (charge en ions). Elle se mesure en microsiemens/centimètre (µS/cm).
+- Intensité : Intensité délivrée en ampères (A).    
+- Puissance : Puissance électrique délivrée en Kilovoltampères (KVA).     
+- Tension : Tension électrique délivrée en volts (V).  
+
+```{r, fig.width=9, dpi=300}
+dept_donnees_env %>% 
+  filter((variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
+  ggplotExtra::gg_lattice_line(
   var_x = annee,
   var_y = mediane,
   var_lattice = variable,
@@ -703,29 +679,6 @@ dept_metrique <- reg_metrique %>%
          metrique = str_to_upper(metrique))
 ```
 
-```{r}
-# ggplot(data = metrique,
-#        aes(x = annee,
-#            y = mediane,
-#            color = (annee < 2007))) +
-#   geom_path(group = 1) +
-#   facet_wrap(~metrique,
-#              scales = "free_y") +
-#   guides(color = "none") +
-#   labs(x = "",
-#        y = "Valeur médiane de la métrique")
-```
-
-```{r}
-# ggplotExtra::gg_lattice_line(
-#   df = metrique,
-#   var_x = annee,
-#   var_y = mediane,
-#   var_lattice = metrique,
-#   threshold_x = 2007,
-#   lab_y = "Valeur médiane de la métrique"
-# )
-```
 ```{r, fig.width = 8, fig.height = 7}
 ggplotExtra::gg_lattice_ipr(
   df = dept_metrique,
@@ -738,7 +691,12 @@ ggplotExtra::gg_lattice_ipr(
 ```
 
 ```{r}
-#save()
+save(dept_classe_ipr,
+     dept_ipr,
+     dept_donnees_env,
+     ope_donnees_env,
+     file = "../processed_data/dept_data.RData"
+     )
 ```
 
 
