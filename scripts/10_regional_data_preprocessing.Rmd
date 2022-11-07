@@ -88,6 +88,25 @@ reg_ope <- reg_data %>%
 # vecteur des ope_id retenus
 mes_ope_reg <- reg_ope %>% 
   pull(ope_id)
+
+# objet classe sf de points sélectionnés
+mes_pts_reg_geo <- point_prelevement %>% 
+  filter(pop_id %in% mes_pts) %>% 
+  sf::st_as_sf(coords = c("pop_coordonnees_x", "pop_coordonnees_y"),
+               crs = 2154)
+
+# carte des départements
+library(COGiter)
+mes_depts_geo <- departements_metro_geo %>% 
+  filter(DEP %in% c("22", "29", "35", "56"))
+
+
+
+
+
+# reseau <- tod::wfs_sandre(
+#   url_wfs = "https://services.sandre.eaufrance.fr/geo/sandre",
+#   couche = "eth")
 ```
 
 
@@ -445,12 +464,13 @@ reg_longueurs <- reg_mei %>%
 
 ```{r}
 # données environnementales simples à l'opération
-reg_donnees_env <- operation_description_peche %>% 
+ope_donnees_env <- operation_description_peche %>% 
   filter(odp_ope_id %in% mes_ope_reg) %>% 
   select(ope_id = odp_ope_id,
          odp_conductivite,
          odp_tension,
          odp_intensite,
+         odp_puissance,
          odp_temperature_instantanee,
          odp_largeur_lame_eau,
          odp_longueur
@@ -460,7 +480,7 @@ reg_donnees_env <- operation_description_peche %>%
                      profondeur_moyenne = ode_profondeur_moyenne_station))
 
 # granulométrie dominante par opération
-reg_granu <- facies %>% 
+ope_granu <- facies %>% 
   select(ope_id = fac_ode_ope_id,
          fac_tyf_id,
          fac_importance_relative,
@@ -475,41 +495,38 @@ reg_granu <- facies %>%
 
 
 # assemblage des deux tables
-reg_donnees_env <- reg_donnees_env %>% 
-  left_join(y = reg_granu) %>%  
+ope_donnees_env <- ope_donnees_env %>%
+  left_join(y = ope_granu) %>%
   pivot_longer(cols = odp_conductivite:granu_dom,
                names_to = "variable",
-               values_to = "valeur") %>% 
-  mef_ajouter_ope_date() %>% 
-  left_join(reg_ope %>% 
-              select(ope_id, dept)) %>% 
-  select(-ope_date) %>% 
-  group_by(annee, variable, dept) %>% 
-    summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  mutate(variable = str_replace(string = variable,
-                                pattern = "odp_",
-                                replacement = ""))
-```
+               values_to = "valeur") %>%
+  mef_ajouter_ope_date() %>%
+  left_join(reg_ope %>%
+              select(ope_id, dept)) %>%
+  select(-ope_date) %>%
+  mutate(
+    variable = str_replace(
+      string = variable,
+      pattern = "odp_",
+      replacement = ""
+    ),
+    variable = case_when(
+      variable == "granu_dom" ~ "Granulométrie dominante",
+      variable == "conductivite" ~ "Conductivité",
+      variable == "intensite" ~ "Intensité",
+      variable == "largeur_lame_eau" ~ "Largeur mouillée",
+      variable == "longueur" ~ "Longueur station",
+      variable == "temperature_instantanee" ~ "Température de l'eau",
+      variable == "tension" ~ "Tension",
+      variable == "profondeur_moyenne" ~ "Profondeur moyenne",
+      variable == "puissance" ~ "Puissance"
+    )
+  )
 
-```{r}
-# ggplot(data = mes_donnees_env,
-#        aes(x = annee,
-#            y = mediane)) +
-#   geom_line() +
-#   facet_wrap(~variable,
-#              scales = "free_y")
-```
-```{r, fig.width = 8}
-# ggplotExtra::gg_lattice_line(
-#   df = mes_donnees_env,
-#   var_x = annee,
-#   var_y = mediane,
-#   var_lattice = variable,
-#   threshold_x = 2007,
-#   lab_y = "Valeur médiane de la variable",
-#   free_y = TRUE
-# )
+reg_donnees_env <- ope_donnees_env %>% 
+  group_by(annee, variable, dept) %>%
+  summarise(mediane = median(valeur, na.rm = TRUE)) %>%
+  ungroup()
 ```
 
 ## Métriques IPR
@@ -709,6 +726,9 @@ save(ma_reg,
      reg_ipr,
      reg_ipr_mediane,
      reg_rs,
+     ope_donnees_env,
+     mes_depts_geo,
+     mes_pts_reg_geo,
      file = "../processed_data/reg_data.RData")
 ```
 
