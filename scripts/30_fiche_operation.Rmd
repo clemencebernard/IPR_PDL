@@ -1,0 +1,129 @@
+---
+output:
+  bookdown::word_document2
+always_allow_html: true
+params:
+  mon_ope: "87642"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+
+
+
+```{r}
+# devtools::install_github("pascalirz/aspe")
+# devtools::install_github("pascalirz/ggplotExtra")
+library(aspe)
+library(ggplotExtra)
+library(tidyverse)
+
+load(file = "../processed_data/reg_data.RData")
+```
+
+```{r}
+mon_libelle <- reg_ope %>% 
+  filter(ope_id == params$mon_ope) %>% 
+  pull(pop_libelle)
+
+mon_pop <- reg_ope %>% 
+  filter(ope_id == params$mon_ope) %>% 
+  pull(pop_id)
+```
+
+>`r mon_libelle`
+
+
+# Conditions de pêche lors des opérations
+
+## Caractéristiques environnementales
+
+```{r, fig.width = 9, dpi = 300}
+ope_donnees_env %>% 
+  filter(pop_id == mon_pop,
+         !(variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))
+         ) %>% 
+  ggplotExtra::gg_lattice_line(
+  var_x = annee,
+  var_y = valeur,
+  var_lattice = variable,
+  threshold_x = 2007,
+  lab_y = "",
+  free_y = TRUE
+)
+```
+
+## Paramètres électriques
+
+
+```{r, fig.width = 9, dpi = 300}
+# ope_donnees_env <- reg_donnees_env %>% 
+#   filter(dept == params$mon_dept) 
+
+ope_donnees_env %>% 
+  filter(
+    pop_id == mon_pop,
+    (variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
+  ggplotExtra::gg_lattice_line(
+  var_x = annee,
+  var_y = valeur,
+  var_lattice = variable,
+  threshold_x = 2007,
+  lab_y = "",
+  free_y = TRUE
+)
+```
+
+# IPR
+
+```{r}
+classe_ipr <- classe_ipr %>%
+  aspe::ip_completer_classes_couleur()
+
+
+pop_ipr <- reg_ipr %>%
+  filter(pop_id == mon_pop)
+
+aspe::gg_temp_ipr(df_ipr = pop_ipr,
+                  var_id_sta = pop_libelle,
+                  var_ipr = ipr,
+                  df_classes = classe_ipr) +
+  labs(title = "")
+```
+
+```{r, fig.width = 8, fig.height = 7}
+reg_metrique %>% 
+  filter(pop_id == mon_pop) %>% 
+  mutate(metrique = str_replace(string = metrique,
+                                pattern = "opi_",
+                                replacement = ""),
+         metrique = str_to_upper(metrique)) %>% 
+  ggplotExtra::gg_lattice_ipr(
+  var_y = valeur,
+  var_lattice = metrique,
+  metriques = TRUE,
+  interactif = FALSE,
+  df_classes = classe_ipr
+)
+```
+
+# Les espèces
+
+## Abondance numérique
+
+```{r}
+reg_effectif_mon_annee %>%
+  filter(pop_id == mon_pop) %>% 
+  # group_by(esp_nom_commun) %>% 
+  # summarise(n = sum(effectif)) %>% 
+  # ungroup() %>% 
+  ggplot(aes(x = fct_reorder(esp_nom_commun, effectif),
+             y = effectif)) +
+  geom_bar(stat = "identity",
+           fill = "darkgreen") +
+  coord_flip() +
+  labs(x = "",
+       y = "Effectif capturé")
+```

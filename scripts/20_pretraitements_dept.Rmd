@@ -26,6 +26,7 @@ library(ggplotExtra)
 library(tidyverse)
 
 load(file = "../processed_data/reg_data.RData")
+load(file = "../processed_data/mes_depts_geo.RData")
 ```
 
 ```{r}
@@ -83,9 +84,81 @@ ggplot(data = mon_dept_geo) +
           col = "red")
 ```
 
+# Conditions de pêche
+
+## Caractéristiques environnementales
+
+Ces quatre graphiques présentent l’évolution des paramètres abiotiques environnementaux qui caractérisent la station. La ligne rouge est la médiane de l’ensemble des données des stations du département qui ont été saisies depuis 1997.
+
+Pour l’ensemble de ces graphiques, la courbe représente la médiane des différents paramètres. 
+
+- Granulométrie : L’axe des ordonnées va de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
+
+0 = Granulométrie inconnue   
+1 = Argile (<0,0039mm)   
+2 = Limons (0,0039 à 0,0625 mm)   
+3 = Sables fins (0,0625 à 2 mm)   
+4 = Sables grossier (2 à 5 mm)   
+5 = Gravier (2 à 16 mm)   
+6 = Cailloux fins (16 à 32 mm)   
+7 = Cailloux grossier (32 à 64 mm)   
+8 = Pierres fines (64 à 128 mm)   
+9 = Pierres grossières (128 à 256 mm)   
+10 = Blocs (256 à 1024 mm)   
+11 = Rochers (>1 m – substrat immergé avec protubérances)    
+12 = Dalles (>1 m – substrat immergé sans protubérances)  
+
+- Largeur mouillée : L’axe des ordonnées est renseigné en mètre (m).
+- Longueur station : L'axe des ordonnée est renseigné en mètre (m).
+- Profondeur : L’axe des ordonnées est en centimètre (cm).
+- Température : L’axe des ordonnées est en degrés Celsius (°C).
+
+  
+
+
+```{r, fig.width = 9, dpi = 300}
+dept_donnees_env <- reg_donnees_env %>% 
+  filter(dept == params$mon_dept) 
+
+dept_donnees_env %>% 
+  filter(!(variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
+  ggplotExtra::gg_lattice_line(
+  var_x = annee,
+  var_y = mediane,
+  var_lattice = variable,
+  threshold_x = 2007,
+  lab_y = "Valeur médiane de la variable",
+  free_y = TRUE
+)
+```
+
+## Paramètres électriques
+
+Ces graphiques présentent l’évolution des paramètres liés à l’électricité. La courbe représente la médiane des différents paramètres. La ligne rouge est la médiane des données réalisées sur le département depuis 1997.
+
+- Conductivité : Capacité de l’eau de la station à conduire le courant électrique (charge en ions). Elle se mesure en microsiemens/centimètre (µS/cm).
+- Intensité : Intensité délivrée en ampères (A).    
+- Puissance : Puissance électrique délivrée en Kilovoltampères (KVA).     
+- Tension : Tension électrique délivrée en volts (V).  
+
+```{r, fig.width=9, dpi=300}
+dept_donnees_env %>% 
+  filter((variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
+  ggplotExtra::gg_lattice_line(
+  var_x = annee,
+  var_y = mediane,
+  var_lattice = variable,
+  threshold_x = 2007,
+  lab_y = "Valeur médiane de la variable",
+  free_y = TRUE
+)
+```
+
 
 
 # IPR
+
+## Tendance départementale
 
 L’indice poissons rivière (IPR) est un indicateur de l’état des peuplements de poissons. Il mesure l’écart entre la composition d’un peuplement de poissons sur une station donnée, observée à partir d’un échantillonnage par pêche électrique, et celle attendue en situation de référence. L’IPR constitue une base standard d’interprétation de résultats d’échantillonnages piscicoles fondée sur l’occurrence et l’abondance des principales espèces d’eau douce présentes en France.
 
@@ -98,8 +171,6 @@ dept_ipr <- reg_ipr %>%
 dept_classe_ipr <- classe_ipr %>%
   aspe::ip_completer_classes_couleur()
 ```
-
-## Echelle départementale
 
 En fond, la couleur correspond aux classes de qualités IPR, depuis « excellent » en bleu jusqu’à « très mauvais » en rouge. 
 
@@ -149,9 +220,58 @@ dept_ipr %>%
             col = "brown")
 ```
 
+## Métriques IPR
+
+Le calcul de la note IPR se fait sur 7 métriques, reposant sur les affinités écologiques des poissons et sur leur densité.
+
+En fond, la couleur correspond à la note qualitative de la métrique, en bleu « excellent » rouge « très mauvais ». 
+
+La ligne rouge correspond à la médiane des données récoltées sur l’ensemble des stations depuis 1997 dans le département.
+
+DII = Densité d’individus invertivores (qui se nourrit d’invertébré)   
+DIO = Densité d’individu omnivores (mange de tout)   
+DIT = Densité d’individus tolérants   
+DTI = DEnsité total d'individus   
+NTE = Nombre total d’espèces    
+NER = Nombre d’espèces rhéophiles (espèces de zones à courant)   
+NEL = Nombre d’espèces lithophiles (Qui se reproduit sur un substrat rocheux)  
 
 
-## Graphiques par station depuis 2000
+
+
+```{r}
+dept_metrique <- reg_metrique %>% 
+  # filter(ope_id %in% dept_ope) %>% 
+  # select(ope_id,
+  #        ope_date,
+  #        annee,
+  #        opi_ner:opi_dti) %>% 
+  # select(-ope_date) %>% 
+  # pivot_longer(cols = opi_ner:opi_dti,
+  #         names_to = "metrique", values_to = "valeur") %>% 
+   group_by(annee, metrique) %>% 
+    summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(metrique = str_replace(metrique,
+                                pattern = "opi_",
+                                replacement = ""),
+         metrique = str_to_upper(metrique))
+```
+
+```{r, fig.width = 8, fig.height = 7}
+ggplotExtra::gg_lattice_ipr(
+  df = dept_metrique,
+  var_y = mediane,
+  var_lattice = metrique,
+  metriques = TRUE,
+  interactif = FALSE,
+  df_classes = dept_classe_ipr
+)
+```
+
+
+
+## IPR par station
 
 En fond, la couleur correspond aux classes de qualités IPR, « excellent » en bleu à « très mauvais » en rouge.
 
@@ -176,86 +296,6 @@ dept_ipr %>%
 
 
 # Les espèces
-
-## Caractérisation de la dynamique
-
-On opère une suite d'opérations :
-
-- filtrage des données nationales sur les opérations de la région depuis 1999 
-- ajout aux données à l'opération de la date et des lots
-- suppression des hybrides et les codes "CYP" (cyprinidés non déterminés à l'espèce)
-- recodages des carpes, vandoises etc.
-- agrégation des captures à l'opération
-- ajout des surfaces prospectées
-
-
-
-```{r}
-# dept_sp <- reg_data %>%  
-#   mef_ajouter_lots() %>%  # ajout des lots
-#   filter(!esp_code_alternatif %in% c("HBG", "CYP")) %>% 
-#   mutate(esp_code_alternatif = case_when(   # recodages à l'espèce
-#     esp_code_alternatif %in% c("CCU", "CCX", "CMI") ~ "CCO",
-#     esp_code_alternatif %in% c("CAG", "CAD", "CAA", "CAS", "CAX") ~ "CAR",
-#     esp_code_alternatif == "VAN" ~ "VAR",
-#     esp_code_alternatif == "BRX" ~ "BRE",
-#     esp_code_alternatif == "GOX" ~ "GOU",
-#     TRUE ~ esp_code_alternatif
-#     )) %>%
-#   group_by(sta_id,
-#            pop_id,
-#            ope_date,
-#            ope_id,
-#            annee,
-#            dept,
-#            esp_code_alternatif) %>% 
-#   summarise(effectif = sum(lop_effectif)) %>% 
-#   ungroup() %>% 
-#   mef_ajouter_surf_calc() %>% # ajout de la surface prospectée 
-#   mutate(effectif = replace_na(effectif, 0)) %>% 
-#   droplevels()
-```
-
-
-
-```{r}
-# densités à l'opération au niveau départemental
-# dept_sp <- dept_sp %>% 
-#   pivot_wider(names_from = esp_code_alternatif,
-#               values_from = effectif,
-#               values_fill = 0) %>% 
-#   pivot_longer(cols = -(sta_id:ope_surface_calculee),
-#                names_to = "esp_code_alternatif",
-#                values_to = "effectif") %>% 
-#   mutate(densite = 1000 * effectif / ope_surface_calculee)
-
-# agrégation annuelle par département et par espèce
-# dept_densites_an <- dept_sp %>% 
-#   group_by(dept, annee, esp_code_alternatif) %>% 
-#     summarise(densite_qd_pres_med = median(densite, na.rm = TRUE),
-#               densite_qd_pres_moy = mean(densite, na.rm = TRUE),
-#               densite_yc_abs_moy = 1000 * sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
-
-# idem mais à l'échelle régionale
-# reg_densites_an <- reg_sp %>% 
-#   group_by(annee, esp_code_alternatif) %>% 
-#     summarise(densite_reg_qd_pres_med = median(densite, na.rm = TRUE),
-#               densite_reg_qd_pres_moy = mean(densite, na.rm = TRUE),
-#               densite_reg_yc_abs_moy = 1000 * sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee, na.rm = TRUE))
-
-# regroupement des deux
-# dept_densites_an <- dept_densites_an %>% 
-#   left_join(reg_densites_an) %>% 
-#   ungroup()
-
-# noms d'espèces en clair
-# dept_densites_an <- dept_densites_an %>% 
-#   left_join(y = ref_espece %>% 
-#               select(esp_code_alternatif,
-#                      esp_nom_commun))
-```
-
-## Espèces
 
 ## Les espèces par département
 
@@ -292,25 +332,6 @@ On a en ordonnée la densité moyenne du taxon chaque dans le département.
 
 
 
-```{r}
-# Liste des noms d'espèces par groupe
-# ecr <- ref_espece %>% 
-#   filter(str_detect(esp_nom_commun, "Ecrevisse") | esp_code_alternatif == "APT") %>% 
-#   filter(esp_code_alternatif != "ECR") %>% 
-#   pull(esp_nom_commun)
-# 
-# eee <- ref_espece %>% 
-#   filter(esp_code_alternatif %in% c("PES", "PCH", "PSR", "OPG")) %>% 
-#   pull(esp_nom_commun)
-# 
-# poissons_loc <- dept_densites_an %>% 
-#   pull(esp_nom_commun) %>% 
-#   unique() %>% 
-#   setdiff(eee) %>% 
-#   setdiff(ecr)
-```
-
-
 
 ```{r}
 # Nombre de taxon par groupe
@@ -329,11 +350,11 @@ n_ecr <- reg_densites_an %>%
   length()
 ```
 
-### Poissons
 
-Calcul des dimensions des figures à afficher en fonction du nombre d'espèces dans chaque groupe.
+
 
 ```{r}
+# Calcul des dimensions des figures à afficher en fonction du nombre d'espèces dans # chaque groupe.
 fig_haut_poissons <- n_poissons_loc %>%
   `/`(6) %>% 
   ceiling() %>% 
@@ -356,30 +377,6 @@ fig_larg_eee <- n_eee * 2.35
 ```
 
 
-```{r}
-# densites <- dept_densites_an %>%
-#   filter(esp_nom_commun %in% poissons_loc)
-```
-
-Graphique. 
-
-```{r, fig.width = 10, fig.height = fig_haut_poissons}
-# reg_densites_an_poissons_loc %>% 
-#   filter(dept == params$mon_dept) %>% 
-#   aspe::gg_temp_abondance(var_abondance = densite_yc_abs_moy,
-#                           var_espece = esp_nom_commun,
-#                           nb_colonnes = 4)
-```
-
-```{r, fig.width = 10, fig.height = fig_haut_poissons}
-# reg_densites_an_poissons_loc %>% 
-#   gg_temp_abondance_groupe(var_abondance = densite_yc_abs_moy,
-#                            var_espece = esp_nom_commun,
-#                            var_groupe = dept,
-#                            groupe = 22,
-#                            nb_colonnes = 4)
-```
-
 
 ```{r, fig.width = 10, fig.height = fig_haut_poissons}
 reg_densites_an_poissons_loc %>% 
@@ -390,11 +387,6 @@ reg_densites_an_poissons_loc %>%
                            nb_colonnes = 4,
                            log_axe_y = FALSE)
 ```
-
-
-
-
-
 
 ## Abondance numérique
 
@@ -424,67 +416,6 @@ reg_effectif_mon_annee %>%
 ## Abondance massique
 
 ```{r}
-# mei <- reg_data %>%
-#   filter(dept == params$mon_dept) %>%
-#   mef_ajouter_mei() %>%
-#   mef_ajouter_lots() %>%
-#   mef_ajouter_type_longueur() %>%
-#   mef_ajouter_esp() %>%
-#   select(
-#     mei_id,
-#     sta_id,
-#     pop_id,
-#     lop_id,
-#     esp_code_alternatif,
-#     esp_nom_commun,
-#     mei_taille,
-#     mei_poids,
-#     mei_poids_estime,
-#     mei_mesure_reelle,
-#     tlo_libelle
-#   )
-# 
-# data("taille_poids")
-# 
-# taille_poids <- taille_poids %>% 
-#   group_by(esp_code_alternatif,
-#     #       esp_nom_latin_tp = esp_nom_latin,
-#            tlo_libelle) %>% 
-#   arrange(source) %>% 
-#   slice(1)
-#   
-
-# nb vérifier qu'on a bien les tailles pour tous les poissons avant d'appliquer la taille-poids
-# combinaisons espèces - type de longueur absentes de la table de conversion
-# tp_manquantes <- mei %>% 
-#   select(esp_code_alternatif, tlo_libelle) %>% 
-#   distinct() %>% 
-#   left_join(y = taille_poids) %>% 
-#   filter(is.na(a))
-# on voit que le pb est que pas mal d'espèces n'ont pas de relation en longueur fourche
-# on approxime par la longueur totale
-# esp_tp_manquantes <- tp_manquantes %>% 
-#   pull(esp_code_alternatif)
-# 
-# poids <- mei %>%
-#   mutate(tlo_libelle = ifelse(esp_code_alternatif %in% esp_tp_manquantes &
-#                                 tlo_libelle == "Fourche",
-#          "Totale",
-#          tlo_libelle))
-
-# poids <- poids %>% 
-#   left_join(y = taille_poids,
-#             by = c("esp_code_alternatif", "tlo_libelle")) %>%
-#   mutate(mei_taille = mei_taille / 10,   # passage en cm
-#          poids_tp = a * (mei_taille ^ b),
-#          erreur_abs = poids_tp - mei_poids,
-#          erreur_rel = erreur_abs / poids_tp)
-
-# test <- poids %>%
-#   filter(is.na(poids_tp)) %>%
-#   group_by(esp_code_alternatif, esp_nom_latin, tlo_libelle) %>%
-#   tally()
-
 poids_dept <- reg_poids %>% 
   filter(dept == params$mon_dept,
          annee == params$mon_annee)
@@ -574,127 +505,14 @@ map(.x = mes_especes,
 )
 ```
 
-## Variables environnementales
 
-Ces quatre graphiques présentent l’évolution des paramètres abiotiques environnementaux qui caractérisent la station. La ligne rouge est la médiane de l’ensemble des données des stations du département qui ont été saisies depuis 1997.
-
-Pour l’ensemble de ces graphiques, la courbe représente la médiane des différents paramètres. 
-
-- Granulométrie : L’axe des ordonnées va de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
-
-0 = Granulométrie inconnue   
-1 = Argile (<0,0039mm)   
-2 = Limons (0,0039 à 0,0625 mm)   
-3 = Sables fins (0,0625 à 2 mm)   
-4 = Sables grossier (2 à 5 mm)   
-5 = Gravier (2 à 16 mm)   
-6 = Cailloux fins (16 à 32 mm)   
-7 = Cailloux grossier (32 à 64 mm)   
-8 = Pierres fines (64 à 128 mm)   
-9 = Pierres grossières (128 à 256 mm)   
-10 = Blocs (256 à 1024 mm)   
-11 = Rochers (>1 m – substrat immergé avec protubérances)    
-12 = Dalles (>1 m – substrat immergé sans protubérances)  
-
-- Largeur mouillée : L’axe des ordonnées est renseigné en mètre (m).
-- Longueur station : L'axe des ordonnée est renseigné en mètre (m).
-- Profondeur : L’axe des ordonnées est en centimètre (cm).
-- Température : L’axe des ordonnées est en degrés Celsius (°C).
-
-  
-
-
-```{r, fig.width = 9, dpi = 300}
-dept_donnees_env <- reg_donnees_env %>% 
-  filter(dept == params$mon_dept) 
-
-dept_donnees_env %>% 
-  filter(!(variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
-  ggplotExtra::gg_lattice_line(
-  var_x = annee,
-  var_y = mediane,
-  var_lattice = variable,
-  threshold_x = 2007,
-  lab_y = "Valeur médiane de la variable",
-  free_y = TRUE
-)
-```
-
-## Variables électriques
-
-Ces graphiques présentent l’évolution des paramètres liés à l’électricité. La courbe représente la médiane des différents paramètres. La ligne rouge est la médiane des données réalisées sur le département depuis 1997.
-
-- Conductivité : Capacité de l’eau de la station à conduire le courant électrique (charge en ions). Elle se mesure en microsiemens/centimètre (µS/cm).
-- Intensité : Intensité délivrée en ampères (A).    
-- Puissance : Puissance électrique délivrée en Kilovoltampères (KVA).     
-- Tension : Tension électrique délivrée en volts (V).  
-
-```{r, fig.width=9, dpi=300}
-dept_donnees_env %>% 
-  filter((variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
-  ggplotExtra::gg_lattice_line(
-  var_x = annee,
-  var_y = mediane,
-  var_lattice = variable,
-  threshold_x = 2007,
-  lab_y = "Valeur médiane de la variable",
-  free_y = TRUE
-)
-```
-
-## Métriques IPR
-
-Le calcul de la note IPR se fait sur 7 métriques, reposant sur les affinités écologiques des poissons et sur leur densité.
-
-En fond, la couleur correspond à la note qualitative de la métrique, en bleu « excellent » rouge « très mauvais ». 
-
-La ligne rouge correspond à la médiane des données récoltées sur l’ensemble des stations depuis 1997 dans le département.
-
-DII = Densité d’individus invertivores (qui se nourrit d’invertébré)   
-DIO = Densité d’individu omnivores (mange de tout)   
-DIT = Densité d’individus tolérants   
-DTI = DEnsité total d'individus   
-NTE = Nombre total d’espèces    
-NER = Nombre d’espèces rhéophiles (espèces de zones à courant)   
-NEL = Nombre d’espèces lithophiles (Qui se reproduit sur un substrat rocheux)  
-
-
-```{r}
-dept_metrique <- reg_metrique %>% 
-  filter(ope_id %in% dept_ope) %>% 
-  select(ope_id,
-         ope_date,
-         annee,
-         opi_ner:opi_dti) %>% 
-  select(-ope_date) %>% 
-  pivot_longer(cols = opi_ner:opi_dti,
-          names_to = "metrique", values_to = "valeur") %>% 
-  
-   group_by(annee, metrique) %>% 
-    summarise(mediane = median(valeur, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  mutate(metrique = str_replace(metrique,
-                                pattern = "opi_",
-                                replacement = ""),
-         metrique = str_to_upper(metrique))
-```
-
-```{r, fig.width = 8, fig.height = 7}
-ggplotExtra::gg_lattice_ipr(
-  df = dept_metrique,
-  var_y = mediane,
-  var_lattice = metrique,
-  metriques = TRUE,
-  interactif = FALSE,
-  df_classes = dept_classe_ipr
-)
-```
 
 ```{r}
 save(dept_classe_ipr,
      dept_ipr,
      dept_donnees_env,
      ope_donnees_env,
+     reg_metrique,
      file = "../processed_data/dept_data.RData"
      )
 ```

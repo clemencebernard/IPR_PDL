@@ -95,13 +95,6 @@ mes_pts_reg_geo <- point_prelevement %>%
   sf::st_as_sf(coords = c("pop_coordonnees_x", "pop_coordonnees_y"),
                crs = 2154)
 
-# carte des départements
-library(COGiter)
-mes_depts_geo <- departements_metro_geo %>% 
-  filter(DEP %in% c("22", "29", "35", "56"))
-
-
-
 
 
 # reseau <- tod::wfs_sandre(
@@ -521,7 +514,10 @@ ope_donnees_env <- ope_donnees_env %>%
       variable == "profondeur_moyenne" ~ "Profondeur moyenne",
       variable == "puissance" ~ "Puissance"
     )
-  )
+  ) %>% 
+    left_join(y = operation %>% 
+              select(ope_id,
+                     pop_id = ope_pop_id))
 
 reg_donnees_env <- ope_donnees_env %>% 
   group_by(annee, variable, dept) %>%
@@ -535,7 +531,18 @@ reg_donnees_env <- ope_donnees_env %>%
 reg_metrique <- operation_ipr %>% 
   filter(opi_ope_id %in% mes_ope_reg) %>%
   rename(ope_id = opi_ope_id) %>% 
-  mef_ajouter_ope_date()
+  mef_ajouter_ope_date() %>% 
+  left_join(y = operation %>% 
+              select(ope_id,
+                     pop_id = ope_pop_id)) %>% 
+  select(ope_id,
+         ope_date,
+         annee,
+         pop_id,
+         opi_ner:opi_dti) %>% 
+  select(-ope_date) %>% 
+  pivot_longer(cols = opi_ner:opi_dti,
+          names_to = "metrique", values_to = "valeur")
 ```
 
 ```{r}
@@ -572,58 +579,58 @@ reg_metrique <- operation_ipr %>%
 ```
 
 
-# A l'échelle de la station
+# A la station dans la région
 
 ## Probabilité de présence des espèces
 
 ```{r}
-# pp <- probabilite_presence_ipr %>%
-#   filter(ppi_opi_ope_id %in% mes_ope_reg) %>%
-#   rename(ope_id = ppi_opi_ope_id,
-#          esp_id = ppi_esp_id) %>%
-#   left_join(y = ref_espece %>%
-#               select(esp_id,
-#                      esp_code_alternatif,
-#                      esp_nom_commun))
-# 
-# pa <- dept_sp %>%
-#   select(ope_id,
-#          esp_code_alternatif,
-#          effectif) %>%
-#   mutate(
-#     esp_code_alternatif = case_when(
-#       esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
-#       esp_code_alternatif == "GOU" ~ "GOX",
-#       esp_code_alternatif == "VAI" ~ "PHX",
-#       esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
-#       TRUE ~ esp_code_alternatif
-#     ),
-#     presence = ifelse(
-#       test = (effectif > 0),
-#       yes = "Présence",
-#       no = "Absence"
-#     )
-#   )
-# 
-# pp <- pp %>%
-#   left_join(pa) %>%
-#   mutate(presence = ifelse(is.na(presence),
-#                      "Absence",
-#                      presence)) %>% 
-#   left_join(operation %>% 
-#               select(ope_id, 
-#                      pop_id = ope_pop_id))
-# 
-# libelles <- dept_sp %>%
-#   select(ope_id,
-#          sta_id,
-#          pop_id) %>% 
-#   distinct() %>% 
-#   mef_ajouter_libelle() %>% 
-#   select(ope_id, pop_libelle)
-# 
-# pp <- pp %>% 
-#   left_join(libelles)
+reg_pp <- probabilite_presence_ipr %>%
+  filter(ppi_opi_ope_id %in% mes_ope_reg) %>%
+  rename(ope_id = ppi_opi_ope_id,
+         esp_id = ppi_esp_id) %>%
+  left_join(y = ref_espece %>%
+              select(esp_id,
+                     esp_code_alternatif,
+                     esp_nom_commun))
+
+reg_pa <- reg_sp %>%
+  select(ope_id,
+         esp_code_alternatif,
+         effectif) %>%
+  mutate(
+    esp_code_alternatif = case_when(
+      esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
+      esp_code_alternatif == "GOU" ~ "GOX",
+      esp_code_alternatif == "VAI" ~ "PHX",
+      esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
+      TRUE ~ esp_code_alternatif
+    ),
+    presence = ifelse(
+      test = (effectif > 0),
+      yes = "Présence",
+      no = "Absence"
+    )
+  )
+
+reg_pp <- reg_pp %>%
+  left_join(reg_pa) %>%
+  mutate(presence = ifelse(is.na(presence),
+                     "Absence",
+                     presence)) %>%
+  left_join(operation %>%
+              select(ope_id,
+                     pop_id = ope_pop_id))
+
+libelles <- reg_sp %>%
+  select(ope_id,
+         sta_id,
+         pop_id) %>%
+  distinct() %>%
+  mef_ajouter_libelle() %>%
+  select(ope_id, pop_libelle)
+
+reg_pp <- reg_pp %>%
+  left_join(libelles)
 ```
 
 ```{r}
@@ -726,8 +733,9 @@ save(ma_reg,
      reg_ipr,
      reg_ipr_mediane,
      reg_rs,
+     reg_pp,
      ope_donnees_env,
-     mes_depts_geo,
+#     mes_depts_geo,
      mes_pts_reg_geo,
      file = "../processed_data/reg_data.RData")
 ```
