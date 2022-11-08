@@ -354,31 +354,12 @@ reg_poids <- reg_poids %>%
          erreur_abs = poids_tp - mei_poids,
          erreur_rel = erreur_abs / poids_tp)
 
-# test <- poids %>%
-#   filter(is.na(poids_tp)) %>%
-#   group_by(esp_code_alternatif, esp_nom_latin, tlo_libelle) %>%
-#   tally()
-
 reg_poids <- reg_poids %>% 
   group_by(esp_nom_commun,
            annee,
            dept) %>% 
   summarise(poids = sum(poids_tp, na.rm = TRUE),
             .groups = "drop")
-```
-
-```{r}
-# ggplot(data = poids_dept,
-#        aes(x = fct_reorder(esp_nom_commun, poids),
-#            y = poids)) +
-#   geom_bar(stat = "identity",
-#            fill = "darkgreen") +
-#   coord_flip() +
-#   scale_y_continuous(labels = scales::label_number(big.mark = "",
-#                                                   accuracy = 1,
-#                                                   scale = 1e-3)) +
-#   labs(x = "",
-#        y = "Biomasse capturée (kg)")
 ```
 
 
@@ -389,7 +370,6 @@ data("traits_bio")
 
 reg_rs <- reg_data %>% 
   mef_ajouter_lots %>% 
-#  mef_ajouter_dept() %>% 
   select(esp_code_alternatif,
          annee,
          dept) %>% 
@@ -402,19 +382,7 @@ reg_rs <- reg_data %>%
   summarise(rs = n_distinct(esp_code_alternatif)) %>% 
   ungroup() %>% 
   mutate(espece = ifelse(test = introduite == TRUE, "Introduites", "Autochtones"))
-  
-# 
-# ggplot(data = rs,
-#        aes(x = annee,
-#            y = rs, col= espece)) +
-#   geom_line() + 
-#   scale_y_continuous(limits = c(0, NA)) +
-#   labs(y = "Richesse spécifique", x = "", col = "Espèces") + 
-#   scale_color_brewer(palette = "Set1")
 ```
-
-
-
 
 ## Distribution en taille pour les principales espèces
 

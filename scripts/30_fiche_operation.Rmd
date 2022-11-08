@@ -116,9 +116,6 @@ reg_metrique %>%
 ```{r}
 reg_effectif_mon_annee %>%
   filter(pop_id == mon_pop) %>% 
-  # group_by(esp_nom_commun) %>% 
-  # summarise(n = sum(effectif)) %>% 
-  # ungroup() %>% 
   ggplot(aes(x = fct_reorder(esp_nom_commun, effectif),
              y = effectif)) +
   geom_bar(stat = "identity",
