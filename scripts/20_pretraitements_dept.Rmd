@@ -160,7 +160,7 @@ dept_donnees_env %>%
 
 ## Tendance départementale
 
-L’indice poissons rivière (IPR) est un indicateur de l’état des peuplements de poissons. Il mesure l’écart entre la composition d’un peuplement de poissons sur une station donnée, observée à partir d’un échantillonnage par pêche électrique, et celle attendue en situation de référence. L’IPR constitue une base standard d’interprétation de résultats d’échantillonnages piscicoles fondée sur l’occurrence et l’abondance des principales espèces d’eau douce présentes en France.
+L’indice poissons rivière (IPR) est un indicateur de l’état des peuplements de poissons. Il mesure l’écart entre la composition d’un peuplement de poissons sur une station donnée, observée à partir d’un échantillonnage par pêche électrique, et celle attendue en situation de référence. L’IPR constitue une base standard d’interprétation de résultats d’échantillonnages piscicoles fondés sur l’occurrence et l’abondance des principales espèces d’eau douce présentes en France.
 
 
 
@@ -234,7 +234,7 @@ DIT = Densité d’individus tolérants
 DTI = DEnsité total d'individus   
 NTE = Nombre total d’espèces    
 NER = Nombre d’espèces rhéophiles (espèces de zones à courant)   
-NEL = Nombre d’espèces lithophiles (Qui se reproduit sur un substrat rocheux)  
+NEL = Nombre d’espèces lithophiles (qui se reproduit sur un substrat rocheux)  
 
 
 
@@ -275,7 +275,7 @@ ggplotExtra::gg_lattice_ipr(
 
 En fond, la couleur correspond aux classes de qualités IPR, « excellent » en bleu à « très mauvais » en rouge.
 
-Ce graphique reprend notes IPR calculées depuis 2007, date à laquelle le protocole a été modifier et appliquer. 
+Ce graphique reprend les notes IPR calculées depuis 2007, date à laquelle le protocole a été modifié et appliquer. 
 
 Les points correspondent à la note des IPR de la station par année. 
 
@@ -301,7 +301,7 @@ dept_ipr %>%
 
 La taille des points indique le pourcentage d’occurrence d'une espèce dans chaque département, c'est à dire le nombre de stations où l'espèce est observée sur le total de stations prospectées dans le département. 
 
-Exemple : Si, dans le Morbihan, le chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d’occurrence dans ce département est donc de 50%.
+Exemple : Si, dans le Morbihan, le Chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d’occurrence dans ce département est donc de 50%.
 
 Les espèces sont ordonées par nombre de départements de présence, puis par nombre total d’occurrences.
 
@@ -326,11 +326,13 @@ ggplot(data = pc_occ_par_dept_mon_annee,
         legend.title = element_text(size = 9))
 ```
 
-On a des graphiques séparés pour les écrevisses, les poissons EEE et les autres espèces. Les espèces sont ordonnées par densités moyennes décroissantes. Les échelles des axes des densités sont différents selon les espèces pour éviter que les plus abondantes n'écrasent les autres qui deviendraient illisibles.
+ATENTION : Pour une meilleure lisibilité, l’échelle de l’ordonnée est en log. Ainsi, les données ne sont pas écrasées lorsqu’il y a beaucoup ou peu d’individus. 
 
-On a en ordonnée la densité moyenne du taxon chaque dans le département.
+Les lignes de couleurs correspondent à la densité spécifique moyenne des départements bretons. 
 
+Sur certaines courbes, on observe un pic tous les deux ans. Celui-ci est dû au RCS qui est réalisé un an sur deux. 
 
+L’intérêt de mettre en évidence la densité spécifique moyenne interdépartementale permet de comparer les dynamiques d’évolutions pour chacune des espèces. 
 
 
 ```{r}
@@ -464,7 +466,7 @@ reg_rs %>%
 
 En inter-annuel, pour les 10 espèces avec les effectifs les plus abondants.
 
-Seules les 10 espèces les plus abondantes sont représentées. En effet pour calculer des classes de tailles représentatives et discerner les générations, il faut un jeu de donnée suffisamment important.  
+Seules les 10 espèces les plus abondantes sont représentées. Pour calculer des classes de tailles représentatives et discerner les générations, il faut un jeu de donnée suffisamment important.  
 
 Les histogrammes regroupent les effectifs d’une espèce par classe de taille sur une année. En procédant ainsi, on peut identifier différentes générations qui correspondent aux piques (1 an, 1+, 2+). 
 
