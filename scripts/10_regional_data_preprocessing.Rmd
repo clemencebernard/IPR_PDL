@@ -8,7 +8,7 @@ output:
 always_allow_html: true
 params:
   mon_dept: "22"
-  mon_annee: "2022"
+  mon_annee: "2021"
 ---
 
 ```{r setup, include = FALSE}
@@ -90,7 +90,7 @@ mes_ope_reg <- reg_ope %>%
   pull(ope_id)
 
 # objet classe sf de points sélectionnés
-mes_pts_reg_geo <- point_prelevement %>% 
+mes_reg_pop_geo <- point_prelevement %>% 
   filter(pop_id %in% mes_pts) %>% 
   sf::st_as_sf(coords = c("pop_coordonnees_x", "pop_coordonnees_y"),
                crs = 2154)
@@ -107,11 +107,11 @@ mes_pts_reg_geo <- point_prelevement %>%
 
 
 ```{r}
-reg_ipr <- reg_ope %>% 
+reg_ope_ipr <- reg_ope %>% 
   mef_ajouter_ipr() %>% 
   filter(!is.na(ipr))
 
-reg_ipr_mediane <- reg_ipr %>%
+reg_ope_ipr_mediane <- reg_ope_ipr %>%
   group_by(annee) %>%
   summarise(ipr_med = median(ipr)) %>%
   ungroup()
@@ -134,7 +134,7 @@ On opère une suite d'opérations :
 
 
 ```{r}
-reg_sp <- reg_data %>%  
+reg_data <- reg_data %>% 
   mef_ajouter_lots() %>%  # ajout des lots
   filter(!esp_code_alternatif %in% c("HBG", "CYP")) %>% 
   mutate(esp_code_alternatif = case_when(   # recodages à l'espèce
@@ -144,7 +144,9 @@ reg_sp <- reg_data %>%
     esp_code_alternatif == "BRX" ~ "BRE",
     esp_code_alternatif == "GOX" ~ "GOU",
     TRUE ~ esp_code_alternatif
-    )) %>%
+    )) 
+
+reg_ope_capt <- reg_data %>%  
   group_by(sta_id,
            pop_id,
            ope_date,
@@ -163,30 +165,46 @@ On complète le tableau avec les absences et calcul des densités (nombre d'indi
 
 ```{r}
 # densités à l'opération au niveau départemental
-reg_sp <- reg_sp %>% 
+reg_ope_capt <- reg_ope_capt %>%
   pivot_wider(names_from = esp_code_alternatif,
               values_from = effectif,
-              values_fill = 0) %>% 
-  pivot_longer(cols = -(sta_id:ope_surface_calculee),
-               names_to = "esp_code_alternatif",
-               values_to = "effectif") %>% 
-  mutate(densite = 1000 * effectif / ope_surface_calculee)
+              values_fill = 0) %>%
+  pivot_longer(
+    cols = -(sta_id:ope_surface_calculee),
+    names_to = "esp_code_alternatif",
+    values_to = "effectif"
+  ) %>%
+  left_join(y = ref_espece %>% 
+              select(esp_code_alternatif,
+                     esp_nom_commun)) %>% 
+  mutate(
+    densite = 1000 * effectif / ope_surface_calculee,
+    esp_code_alternatif2 = paste0(esp_nom_commun,
+                                  " (",
+                                  esp_code_alternatif,
+                                  ")")
+  )
+
+
+
+
 
 # agrégation annuelle par département et par espèce
-reg_densites_an <- reg_sp %>% 
-  group_by(dept, annee, esp_code_alternatif) %>% 
-    summarise(densite_qd_pres_med = median(densite, na.rm = TRUE),
-              densite_qd_pres_moy = mean(densite, na.rm = TRUE),
-              densite_yc_abs_moy = 1000 * sum(effectif, na.rm = TRUE) / sum(ope_surface_calculee,
-                                                                            na.rm = TRUE)) %>% 
-  ungroup()
+# reg_dept_dens_num <- reg_ope_capt %>%
+#   group_by(dept, annee, esp_code_alternatif) %>%
+#     summarise(densite_qd_pres_med = median(densite, na.rm = FALSE),
+#               densite_qd_pres_moy = mean(densite, na.rm = FALSE),
+#               densite_yc_abs_moy = 1000 * sum(effectif, na.rm = FALSE) / sum(ope_surface_calculee,
+#                                                                             na.rm = FALSE)
+#               ) %>%
+#   ungroup()
 
 
 # noms d'espèces en clair
-reg_densites_an <- reg_densites_an %>% 
-  left_join(y = ref_espece %>% 
-              select(esp_code_alternatif,
-                     esp_nom_commun))
+# reg_dept_dens_num <- reg_dept_dens_num %>%
+#   left_join(y = ref_espece %>%
+#               select(esp_code_alternatif,
+#                      esp_nom_commun))
 ```
 
 ## Espèces
@@ -208,7 +226,7 @@ eee <- ref_espece %>%
   filter(esp_code_alternatif %in% c("PES", "PCH", "PSR", "OPG")) %>% 
   pull(esp_nom_commun)
 
-poissons_loc <- reg_densites_an %>% 
+poissons_loc <- reg_ope_capt %>% 
   pull(esp_nom_commun) %>% 
   unique() %>% 
   setdiff(eee) %>% 
@@ -220,8 +238,8 @@ poissons_loc <- reg_densites_an %>%
 
 
 ```{r}
-reg_densites_an_poissons_loc <- reg_densites_an %>%
-  filter(esp_nom_commun %in% poissons_loc)
+# reg_dept_dens_num_poissons_loc <- reg_dept_dens_num %>%
+#   filter(esp_nom_commun %in% poissons_loc)
 ```
 
 
@@ -235,46 +253,48 @@ Ici la taille des points indique le pourcentage des stations échantillonnées d
 Exemple : Si, dans le 56, le chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d'occurrence dans ce département est donc de 50%. 
 
 ```{r, fig.height = 9, fig.width = 7, dpi = 300}
-reg_effectif_mon_annee <- reg_data %>% 
-  mef_ajouter_dept() %>% 
-  mef_ajouter_lots() %>% 
-  filter(annee == params$mon_annee) %>% 
-  mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
-                                      "CCO",
-                                      esp_code_alternatif)) %>% 
-  group_by(pop_id, dept, esp_code_alternatif) %>% 
-    summarise(effectif = sum(lop_effectif),
-              .groups = "drop") %>% 
-  left_join(y = ref_espece %>% 
-              select(esp_code_alternatif, esp_nom_commun)) %>% 
-  mutate(esp_nom_commun = paste0(esp_nom_commun,
-                                 " (",
-                                 esp_code_alternatif,
-                                 ")"))
+# reg_ope_1a_eff <- reg_ope_capt %>% 
+#   # mef_ajouter_dept() %>% 
+#   # mef_ajouter_lots() %>% 
+#   filter(annee == params$mon_annee) %>% 
+#   # mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
+#   #                                     "CCO",
+#   #                                     esp_code_alternatif)) %>% 
+#   # group_by(pop_id, dept, esp_code_alternatif) %>% 
+#   #   summarise(effectif = sum(lop_effectif),
+#   #             .groups = "drop") %>% 
+#   left_join(y = ref_espece %>% 
+#               select(esp_code_alternatif, esp_nom_commun)) %>% 
+#   mutate(esp_nom_commun2 = paste0(esp_nom_commun,
+#                                  " (",
+#                                  esp_code_alternatif,
+#                                  ")"))
 
 # mic mac pour ordonner les départements de manière aussi "emboîtée" que possible
-nb_pop_par_dept_mon_annee <- reg_effectif_mon_annee %>% 
+nb_pop_par_dept_mon_annee <- reg_ope_capt %>% 
   group_by(dept) %>% 
     summarise(n_pop = n_distinct(pop_id))
 
-n_occ_par_esp_par_dept_mon_annee <- reg_effectif_mon_annee %>% 
+n_occ_par_esp_par_dept_mon_annee <- reg_ope_capt %>% 
+  filter(effectif > 0) %>% 
   group_by(dept, esp_nom_commun) %>% 
     tally()
 
-pc_occ_par_dept_mon_annee <- n_occ_par_esp_par_dept_mon_annee %>% 
+reg_dept_1a_pc_oc <- n_occ_par_esp_par_dept_mon_annee %>% 
   left_join(y = nb_pop_par_dept_mon_annee) %>% 
   mutate(pc_occ = n / n_pop,
          dept_fct = as.factor(dept),
          dept_fct = fct_relevel(dept_fct, "35", "56", "29", "22"))
 
-ordre_esp <- reg_effectif_mon_annee %>% 
+ordre_esp <- reg_ope_capt %>% 
+  filter(effectif > 0) %>% 
   group_by(esp_nom_commun) %>% 
   summarise(n_dept = n_distinct(dept),
-            n_occ = sum(effectif > 0)) %>% 
+            n_occ = sum(effectif)) %>% 
   ungroup() %>% 
   arrange(n_dept, n_occ)
 
-pc_occ_par_dept_mon_annee <- pc_occ_par_dept_mon_annee %>% 
+reg_dept_1a_pc_oc <- reg_dept_1a_pc_oc %>% 
   left_join(ordre_esp) %>%
   mutate(esp_nom_commun = factor(esp_nom_commun,
                                  ordre_esp$esp_nom_commun),
@@ -283,14 +303,11 @@ pc_occ_par_dept_mon_annee <- pc_occ_par_dept_mon_annee %>%
                           "black"))
 
 # identification des écrevisses par une couleur bleue sur l'axe des espèces
-couleurs_ecr <- pc_occ_par_dept_mon_annee %>%
+couleurs_ecr <- reg_dept_1a_pc_oc %>%
   group_by(esp_nom_commun) %>%
   slice(1) %>%
   pull(couleur)
 ```
-
-## Abondance numérique
-
 
 
 ## Abondance massique
@@ -308,6 +325,7 @@ reg_mei <- reg_data %>%
     dept,
     annee,
     ope_date,
+    ope_id,
     lop_id,
     esp_code_alternatif,
     esp_nom_commun,
@@ -316,7 +334,13 @@ reg_mei <- reg_data %>%
     mei_poids_estime,
     mei_mesure_reelle,
     tlo_libelle
-  )
+  )  %>%
+  mutate(esp_code_alternatif2 = paste0(
+    esp_nom_commun,
+    " (",
+    esp_code_alternatif,
+    ")"
+  ))
 
 # utilisation des relations taille - poids du package aspe
 data("taille_poids")
@@ -340,13 +364,13 @@ tp_manquantes <- reg_mei %>%
 esp_tp_manquantes <- tp_manquantes %>% 
   pull(esp_code_alternatif)
 
-reg_poids <- reg_mei %>%
+reg_mei <- reg_mei %>%
   mutate(tlo_libelle = ifelse(esp_code_alternatif %in% esp_tp_manquantes &
                                 tlo_libelle == "Fourche",
          "Totale",
          tlo_libelle))
 
-reg_poids <- reg_poids %>% 
+reg_mei <- reg_mei %>% 
   left_join(y = taille_poids,
             by = c("esp_code_alternatif", "tlo_libelle")) %>%
   mutate(mei_taille = mei_taille / 10,   # passage en cm
@@ -354,12 +378,42 @@ reg_poids <- reg_poids %>%
          erreur_abs = poids_tp - mei_poids,
          erreur_rel = erreur_abs / poids_tp)
 
-reg_poids <- reg_poids %>% 
+# poids_tp manquants : essentiellement des écrevisses. + qq erreurs de saisie
+# poids_tp_manquants <- reg_mei %>% 
+#   filter(is.na(poids_tp),
+#          !str_detect(string = esp_nom_commun,
+#                      "Ecrevi"))
+
+reg_ope_poids <- reg_mei %>% 
+  group_by(ope_id, esp_code_alternatif) %>%
+    summarise(poids = sum(poids_tp)) %>% 
+  ungroup()
+
+reg_dept_poids <- reg_mei %>% 
   group_by(esp_nom_commun,
            annee,
            dept) %>% 
   summarise(poids = sum(poids_tp, na.rm = TRUE),
             .groups = "drop")
+```
+
+On ajoute les poids par opération par espèce au tableau des captures
+
+```{r}
+reg_ope_capt <- reg_ope_capt %>% 
+  left_join(y = reg_ope_poids) %>% 
+  mutate(densite_mas = poids / ope_surface_calculee)
+```
+
+Agrégation par département
+
+```{r}
+reg_dept_capt <- reg_ope_capt %>% 
+  group_by(annee, dept, esp_code_alternatif2, esp_nom_commun) %>% 
+    summarise(effectif = sum(effectif, na.rm = TRUE),
+              poids = sum(poids, na.rm = TRUE),
+              densite_moy = mean(densite, na.rm = TRUE),
+              densite_mas_moy = mean(densite_mas, na.rm = TRUE))
 ```
 
 
@@ -369,7 +423,6 @@ reg_poids <- reg_poids %>%
 data("traits_bio")
 
 reg_rs <- reg_data %>% 
-  mef_ajouter_lots %>% 
   select(esp_code_alternatif,
          annee,
          dept) %>% 
@@ -394,38 +447,13 @@ reg_longueurs <- reg_mei %>%
   filter(mei_taille > 0) %>% 
   mef_ajouter_lots() %>% 
   mef_ajouter_esp()
-
-# Histo cumulé pluri-annuel : Les espèces avec mini 1000 individus sur la période
-# mes_especes <- longueurs %>% 
-#   group_by(esp_code_alternatif) %>% 
-#   tally() %>% 
-#   arrange(-n) %>%
-#   slice(1:10) %>%
-#   pull(esp_code_alternatif)
-# 
-# longueurs <- longueurs %>% 
-#   filter(esp_code_alternatif %in% mes_especes)
-
-```
-
-```{r, fig.height = 8, results = 'hide'}
-# map(.x = mes_especes,
-#     .f = gg_dyn_esp,
-#     df = longueurs,
-#     var_id_espece = esp_code_alternatif,
-#     var_id_station = pop_id,
-#     seuil = 0.01,
-#     graph_long_mediane = FALSE,
-#     graph_mois = FALSE,
-#     graph_effectif = F
-# )
 ```
 
 ## Variables environnementales
 
 ```{r}
 # données environnementales simples à l'opération
-ope_donnees_env <- operation_description_peche %>% 
+reg_ope_env <- operation_description_peche %>% 
   filter(odp_ope_id %in% mes_ope_reg) %>% 
   select(ope_id = odp_ope_id,
          odp_conductivite,
@@ -441,7 +469,7 @@ ope_donnees_env <- operation_description_peche %>%
                      profondeur_moyenne = ode_profondeur_moyenne_station))
 
 # granulométrie dominante par opération
-ope_granu <- facies %>% 
+reg_ope_granu <- facies %>% 
   select(ope_id = fac_ode_ope_id,
          fac_tyf_id,
          fac_importance_relative,
@@ -456,8 +484,8 @@ ope_granu <- facies %>%
 
 
 # assemblage des deux tables
-ope_donnees_env <- ope_donnees_env %>%
-  left_join(y = ope_granu) %>%
+reg_ope_env <- reg_ope_env %>%
+  left_join(y = reg_ope_granu) %>%
   pivot_longer(cols = odp_conductivite:granu_dom,
                names_to = "variable",
                values_to = "valeur") %>%
@@ -487,7 +515,7 @@ ope_donnees_env <- ope_donnees_env %>%
               select(ope_id,
                      pop_id = ope_pop_id))
 
-reg_donnees_env <- ope_donnees_env %>% 
+reg_donnees_env <- reg_ope_env %>% 
   group_by(annee, variable, dept) %>%
   summarise(mediane = median(valeur, na.rm = TRUE)) %>%
   ungroup()
@@ -496,7 +524,7 @@ reg_donnees_env <- ope_donnees_env %>%
 ## Métriques IPR
 
 ```{r}
-reg_metrique <- operation_ipr %>% 
+reg_ope_metrique <- operation_ipr %>% 
   filter(opi_ope_id %in% mes_ope_reg) %>%
   rename(ope_id = opi_ope_id) %>% 
   mef_ajouter_ope_date() %>% 
@@ -513,46 +541,12 @@ reg_metrique <- operation_ipr %>%
           names_to = "metrique", values_to = "valeur")
 ```
 
-```{r}
-# ggplot(data = metrique,
-#        aes(x = annee,
-#            y = mediane,
-#            color = (annee < 2007))) +
-#   geom_path(group = 1) +
-#   facet_wrap(~metrique,
-#              scales = "free_y") +
-#   guides(color = "none") +
-#   labs(x = "",
-#        y = "Valeur médiane de la métrique")
-```
-
-```{r}
-# ggplotExtra::gg_lattice_line(
-#   df = metrique,
-#   var_x = annee,
-#   var_y = mediane,
-#   var_lattice = metrique,
-#   threshold_x = 2007,
-#   lab_y = "Valeur médiane de la métrique"
-# )
-```
-```{r, fig.width = 8}
-# ggplotExtra::gg_lattice_ipr(
-#   df = metrique,
-#   var_y = mediane,
-#   var_lattice = metrique,
-#   metriques = TRUE,
-#   interactif = TRUE
-# )
-```
-
-
 # A la station dans la région
 
 ## Probabilité de présence des espèces
 
 ```{r}
-reg_pp <- probabilite_presence_ipr %>%
+reg_ope_pp <- probabilite_presence_ipr %>%
   filter(ppi_opi_ope_id %in% mes_ope_reg) %>%
   rename(ope_id = ppi_opi_ope_id,
          esp_id = ppi_esp_id) %>%
@@ -561,18 +555,18 @@ reg_pp <- probabilite_presence_ipr %>%
                      esp_code_alternatif,
                      esp_nom_commun))
 
-reg_pa <- reg_sp %>%
+reg_ope_pa <- reg_ope_capt %>%
   select(ope_id,
          esp_code_alternatif,
          effectif) %>%
   mutate(
-    esp_code_alternatif = case_when(
-      esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
-      esp_code_alternatif == "GOU" ~ "GOX",
-      esp_code_alternatif == "VAI" ~ "PHX",
-      esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
-      TRUE ~ esp_code_alternatif
-    ),
+ #   esp_code_alternatif = case_when(
+    #   esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
+    #   esp_code_alternatif == "GOU" ~ "GOX",
+    #   esp_code_alternatif == "VAI" ~ "PHX",
+    #   esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
+    #   TRUE ~ esp_code_alternatif
+    # ),
     presence = ifelse(
       test = (effectif > 0),
       yes = "Présence",
@@ -580,8 +574,8 @@ reg_pa <- reg_sp %>%
     )
   )
 
-reg_pp <- reg_pp %>%
-  left_join(reg_pa) %>%
+reg_ope_pp <- reg_ope_pp %>%
+  left_join(reg_ope_pa) %>%
   mutate(presence = ifelse(is.na(presence),
                      "Absence",
                      presence)) %>%
@@ -589,7 +583,7 @@ reg_pp <- reg_pp %>%
               select(ope_id,
                      pop_id = ope_pop_id))
 
-libelles <- reg_sp %>%
+libelles <- reg_ope_capt %>%
   select(ope_id,
          sta_id,
          pop_id) %>%
@@ -597,51 +591,10 @@ libelles <- reg_sp %>%
   mef_ajouter_libelle() %>%
   select(ope_id, pop_libelle)
 
-reg_pp <- reg_pp %>%
+reg_ope_pp <- reg_ope_pp %>%
   left_join(libelles)
 ```
 
-```{r}
-# mon_operation <- 6855
-# 
-# mon_point <- pp %>% 
-#   filter(ope_id == mon_operation) %>% 
-#   pull(pop_id) %>% 
-#   unique()
-#   
-# 
-# test <- pp %>% 
-#   filter(ope_id == mon_operation) %>% 
-#   mutate(esp_nom_commun = fct_reorder(esp_nom_commun, ppi_valeur_probabilite),
-#          couleur = ifelse(presence == "Présence",
-#                           "#1B9E77",
-#                           "#D95F02")) %>% 
-#   arrange(esp_nom_commun)
-# 
-# ma_station <- test %>% 
-#   pull(pop_libelle) %>% 
-#   unique()
-```
-
-```{r}
-# ggplot(data = test,
-#        aes(x = esp_nom_commun,
-#            y = ppi_valeur_probabilite,
-#            fill = presence)) +
-#   geom_bar(stat = "identity") +
-#   coord_flip() +
-#   labs(x = "",
-#        y = "Probabilité de présence",
-#        title = ma_station,
-#        fill = "") +
-#   scale_y_continuous(labels = scales::percent) +
-#   theme(legend.position = "bottom",
-#         axis.text = element_text(size = 8),
-#         axis.text.y = element_text(colour = test$couleur),
-#         legend.text = element_text(size = 8),
-#         legend.title = element_text(size = 9)) +
-#   scale_fill_brewer(palette = "Dark2", direction = -1)
-```
 
 ## densité numérique 
 
@@ -685,26 +638,27 @@ save(ma_reg,
      ecr,
      eee,
      poissons_loc,
-     pc_occ_par_dept_mon_annee,
+     reg_dept_1a_pc_oc,
      couleurs_ecr,
      classe_ipr,
      reg_data,
      reg_ope,
-     reg_densites_an,
-     reg_densites_an_poissons_loc,
-     reg_poids,
-     reg_effectif_mon_annee,
+     reg_ope_capt,
+     reg_dept_capt,
+     # reg_densites_an_poissons_loc,
+     # reg_dept_poids,
+ #    reg_ope_1a_eff,
      reg_mei,
      reg_longueurs,
      reg_donnees_env,
-     reg_metrique,
-     reg_ipr,
-     reg_ipr_mediane,
+     reg_ope_metrique,
+     reg_ope_ipr,
+     reg_ope_ipr_mediane,
      reg_rs,
-     reg_pp,
-     ope_donnees_env,
+     reg_ope_pp,
+     reg_ope_env,
 #     mes_depts_geo,
-     mes_pts_reg_geo,
+     mes_reg_pop_geo,
      file = "../processed_data/reg_data.RData")
 ```
 

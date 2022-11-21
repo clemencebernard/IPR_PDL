@@ -1,9 +1,10 @@
 ---
 output:
-  bookdown::word_document2
+  pdf_document: default
+  bookdown::word_document2: default
 always_allow_html: true
 params:
-  mon_ope: "87642"
+  mon_ope: "87994"
 ---
 
 ```{r setup, include = FALSE}
@@ -41,7 +42,7 @@ mon_pop <- reg_ope %>%
 ## Caractéristiques environnementales
 
 ```{r, fig.width = 9, dpi = 300}
-ope_donnees_env %>% 
+reg_ope_env %>% 
   filter(pop_id == mon_pop,
          !(variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))
          ) %>% 
@@ -59,10 +60,10 @@ ope_donnees_env %>%
 
 
 ```{r, fig.width = 9, dpi = 300}
-# ope_donnees_env <- reg_donnees_env %>% 
+# reg_ope_env <- reg_donnees_env %>% 
 #   filter(dept == params$mon_dept) 
 
-ope_donnees_env %>% 
+reg_ope_env %>% 
   filter(
     pop_id == mon_pop,
     (variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
@@ -83,7 +84,7 @@ classe_ipr <- classe_ipr %>%
   aspe::ip_completer_classes_couleur()
 
 
-pop_ipr <- reg_ipr %>%
+pop_ipr <- reg_ope_ipr %>%
   filter(pop_id == mon_pop)
 
 aspe::gg_temp_ipr(df_ipr = pop_ipr,
@@ -94,7 +95,7 @@ aspe::gg_temp_ipr(df_ipr = pop_ipr,
 ```
 
 ```{r, fig.width = 8, fig.height = 7}
-reg_metrique %>% 
+reg_ope_metrique %>% 
   filter(pop_id == mon_pop) %>% 
   mutate(metrique = str_replace(string = metrique,
                                 pattern = "opi_",
@@ -114,8 +115,9 @@ reg_metrique %>%
 ## Abondance numérique
 
 ```{r}
-reg_effectif_mon_annee %>%
-  filter(pop_id == mon_pop) %>% 
+reg_ope_capt %>%
+  filter(ope_id == params$mon_ope,
+         effectif > 0) %>% 
   ggplot(aes(x = fct_reorder(esp_nom_commun, effectif),
              y = effectif)) +
   geom_bar(stat = "identity",
@@ -123,4 +125,49 @@ reg_effectif_mon_annee %>%
   coord_flip() +
   labs(x = "",
        y = "Effectif capturé")
+```
+
+
+
+## Probabilité de présence
+
+
+```{r}
+mon_point <- reg_ope_pp %>%
+  filter(ope_id == params$mon_ope) %>%
+  pull(pop_id) %>%
+  unique()
+   
+
+test <- reg_ope_pp %>%
+  filter(ope_id == params$mon_ope) %>%
+  mutate(esp_nom_commun = fct_reorder(esp_nom_commun, ppi_valeur_probabilite),
+         couleur = ifelse(presence == "Présence",
+                          "#1B9E77",
+                          "#D95F02")) %>%
+  arrange(esp_nom_commun)
+
+ma_station <- test %>%
+  pull(pop_libelle) %>%
+  unique()
+```
+
+```{r}
+ggplot(data = test,
+       aes(x = esp_nom_commun,
+           y = ppi_valeur_probabilite,
+           fill = presence)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "",
+       y = "Probabilité de présence",
+       title = ma_station,
+       fill = "") +
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 8),
+        axis.text.y = element_text(colour = test$couleur),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 9)) +
+  scale_fill_brewer(palette = "Dark2", direction = -1)
 ```

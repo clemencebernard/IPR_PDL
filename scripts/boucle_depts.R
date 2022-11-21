@@ -2,7 +2,7 @@
 render_one <- function(dept) {
   rmarkdown::render(
     'scripts/20_pretraitements_dept.Rmd',
-    output_file = paste0("../rapports_intermediaires/rapport_dept_", dept, '.docx'),
+    output_file = paste0("../rapports_intermediaires/rapport_dept_", dept, '.pdf'),
     params = list(mon_dept = dept),
     envir = parent.frame()
   )

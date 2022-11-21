@@ -1,14 +1,15 @@
 ---
 title: "Synthèse pêches électriques réseaux `r params$mon_annee`"
-subtitle: "Prétraitements échelle départementale"
+subtitle: "Département : `r params$mon_dept`"
 author: "OFB - DR Bretagne"
 date: "`r format(Sys.time(), 'Le %d %B %Y')`"
 output:
-  bookdown::word_document2
+  pdf_document: default
+  bookdown::word_document2: default
 always_allow_html: true
 params:
   mon_dept: "22"
-  mon_annee: "2022"
+  mon_annee: "2021"
 ---
 
 ```{r setup, include = FALSE}
@@ -74,7 +75,7 @@ Pour finir, les stations sont décrites une à une par la fiche station ASPE. Po
 mon_dept_geo <- mes_depts_geo %>% 
          filter(DEP == params$mon_dept)
 
-mes_pts_dept_geo <- mes_pts_reg_geo %>% 
+mes_pts_dept_geo <- mes_reg_pop_geo %>% 
   sf::st_join(mon_dept_geo) %>% 
   filter(!is.na(DEP))
 
@@ -165,7 +166,7 @@ L’indice poissons rivière (IPR) est un indicateur de l’état des peuplement
 
 
 ```{r}
-dept_ipr <- reg_ipr %>%
+dept_ipr <- reg_ope_ipr %>%
   filter(dept == params$mon_dept)
 
 dept_classe_ipr <- classe_ipr %>%
@@ -214,7 +215,7 @@ dept_ipr %>%
   theme(legend.position = "bottom",
         strip.text.x = element_text(size = 10),
         axis.text.x = element_text(angle = 0, hjust = 0.5)) +
-  geom_line(data = reg_ipr_mediane,
+  geom_line(data = reg_ope_ipr_mediane,
             aes(x = annee,
                 y = ipr_med),
             col = "brown")
@@ -240,7 +241,7 @@ NEL = Nombre d’espèces lithophiles (qui se reproduit sur un substrat rocheux)
 
 
 ```{r}
-dept_metrique <- reg_metrique %>% 
+dept_metrique <- reg_ope_metrique %>% 
   # filter(ope_id %in% dept_ope) %>% 
   # select(ope_id,
   #        ope_date,
@@ -280,8 +281,7 @@ Ce graphique reprend les notes IPR calculées depuis 2007, date à laquelle le p
 Les points correspondent à la note des IPR de la station par année. 
 
 
-```{r, fig.width = 10, fig.height = reg_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(4) %>% ceiling()%>% `*`(2.5)%>% `+`(1)}
-
+```{r, fig.width = 10, fig.height = reg_ope_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(4) %>% ceiling()%>% `*`(2.5)%>% `+`(1)}
 
 dept_ipr %>%
   gg_temp_ipr(var_id_sta = pop_libelle,
@@ -301,7 +301,7 @@ dept_ipr %>%
 
 La taille des points indique le pourcentage d’occurrence d'une espèce dans chaque département, c'est à dire le nombre de stations où l'espèce est observée sur le total de stations prospectées dans le département. 
 
-Exemple : Si, dans le Morbihan, le Chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d’occurrence dans ce département est donc de 50%.
+Exemple : Si, dans le Morbihan, le Chevaine a été capturé sur 8 des 16 stations prospectées en `r  params$mon_annee`. Son taux d’occurrence dans ce département est donc de 50%.
 
 Les espèces sont ordonées par nombre de départements de présence, puis par nombre total d’occurrences.
 
@@ -309,7 +309,7 @@ Les écrevisses apparaissent en bleu.
 
 
 ```{r, fig.height = 9, fig.width = 7, dpi = 300}
-ggplot(data = pc_occ_par_dept_mon_annee,
+ggplot(data = reg_dept_1a_pc_oc,
        aes(x = dept_fct,
            y = esp_nom_commun,
            size = pc_occ)) +
@@ -335,16 +335,19 @@ Sur certaines courbes, on observe un pic tous les deux ans. Celui-ci est dû au 
 L’intérêt de mettre en évidence la densité spécifique moyenne interdépartementale permet de comparer les dynamiques d’évolutions pour chacune des espèces. 
 
 
+
 ```{r}
 # Nombre de taxon par groupe
 n_poissons_loc <- length(poissons_loc)
-n_eee <- reg_densites_an %>%
+
+n_eee <- reg_dept_capt %>%
   filter(dept == params$mon_dept,
          esp_nom_commun %in% eee) %>%
   pull(esp_nom_commun) %>%
   unique() %>%
   length()
-n_ecr <- reg_densites_an %>%
+
+n_ecr <- reg_dept_capt %>%
   filter(dept == params$mon_dept,
          esp_nom_commun %in% ecr) %>%
   pull(esp_nom_commun) %>%
@@ -381,32 +384,32 @@ fig_larg_eee <- n_eee * 2.35
 
 
 ```{r, fig.width = 10, fig.height = fig_haut_poissons}
-reg_densites_an_poissons_loc %>% 
-  gg_temp_abondance_groupe(var_abondance = densite_yc_abs_moy,
+reg_dept_capt %>% 
+  filter(esp_nom_commun %in% poissons_loc) %>% 
+  gg_temp_abondance_groupe(var_abondance = densite_moy,
                            var_espece = esp_nom_commun,
                            var_groupe = dept,
-                           groupe = 22,
+                           groupe = params$mon_dept,
                            nb_colonnes = 4,
                            log_axe_y = FALSE)
 ```
 
 ## Abondance numérique
 
-Sur ce premier histogramme, on peut voir le nombre de fois où une espèce a été observée dans le département pour l’année 2022. 
+Sur ce premier histogramme, on peut voir le nombre de fois où une espèce a été observée dans le département pour l’année `r  params$mon_annee`. 
 
-Sur le deuxième, c’est la biomasse spécifique totale qui est mise en évidence pour la saison de pêche 2022. 
+Sur le deuxième, c’est la biomasse spécifique totale qui est mise en évidence pour la saison de pêche `r  params$mon_annee`. 
 
 Il est intéressant de mettre en parallèle ces deux tableaux, car cela permet de se rendre compte que ce ne sont pas toujours les espèces les plus abondantes qui représentent le plus gros volume sur l’ensemble des stations et inversement.  
 
 
 ```{r}
-reg_effectif_mon_annee %>%
-  filter(dept == params$mon_dept) %>% 
-  group_by(esp_nom_commun) %>% 
-  summarise(n = sum(effectif)) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = fct_reorder(esp_nom_commun, n),
-             y = n)) +
+reg_dept_capt %>%
+  filter(dept == params$mon_dept,
+         annee == params$mon_annee,
+         effectif > 0) %>% 
+  ggplot(aes(x = fct_reorder(esp_code_alternatif2, effectif),
+             y = effectif)) +
   geom_bar(stat = "identity",
            fill = "darkgreen") +
   coord_flip() +
@@ -417,24 +420,41 @@ reg_effectif_mon_annee %>%
 
 ## Abondance massique
 
-```{r}
-poids_dept <- reg_poids %>% 
-  filter(dept == params$mon_dept,
-         annee == params$mon_annee)
-```
 
 ```{r}
-ggplot(data = poids_dept,
-       aes(x = fct_reorder(esp_nom_commun, poids),
-           y = poids)) +
+reg_dept_capt %>%
+  filter(dept == params$mon_dept,
+         annee == params$mon_annee,
+         poids > 0) %>% 
+  mutate(poids = poids / 1000) %>% 
+  ggplot(aes(x = fct_reorder(esp_code_alternatif2, poids),
+             y = poids)) +
   geom_bar(stat = "identity",
            fill = "darkgreen") +
   coord_flip() +
-  scale_y_continuous(labels = scales::label_number(big.mark = "",
-                                                  accuracy = 1,
-                                                  scale = 1e-3)) +
   labs(x = "",
        y = "Biomasse capturée (kg)")
+```
+
+
+```{r}
+# poids_dept <- reg_dept_poids %>% 
+#   filter(dept == params$mon_dept,
+#          annee == params$mon_annee)
+```
+
+```{r}
+# ggplot(data = poids_dept,
+#        aes(x = fct_reorder(esp_nom_commun, poids),
+#            y = poids)) +
+#   geom_bar(stat = "identity",
+#            fill = "darkgreen") +
+#   coord_flip() +
+#   scale_y_continuous(labels = scales::label_number(big.mark = "",
+#                                                   accuracy = 1,
+#                                                   scale = 1e-3)) +
+#   labs(x = "",
+#        y = "Biomasse capturée (kg)")
 ```
 
 
@@ -486,7 +506,7 @@ mes_especes <- longueurs %>%
   group_by(esp_code_alternatif) %>% 
   tally() %>% 
   arrange(-n) %>%
-  slice(1:10) %>%
+  slice(1:2) %>%
   pull(esp_code_alternatif)
 
 longueurs <- longueurs %>% 
@@ -513,8 +533,9 @@ map(.x = mes_especes,
 save(dept_classe_ipr,
      dept_ipr,
      dept_donnees_env,
-     ope_donnees_env,
-     reg_metrique,
+     reg_ope_env,
+     reg_ope_pp,
+     reg_ope_metrique,
      file = "../processed_data/dept_data.RData"
      )
 ```

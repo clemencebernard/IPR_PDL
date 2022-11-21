@@ -43,3 +43,9 @@ vignettes/*.pdf
 
 # docx_files
 /scripts/*.docx
+
+# rapports_intermediaires repo
+rapports_intermediaires/*.docx
+
+# rapports_finaux repo
+/rapports_finaux/
