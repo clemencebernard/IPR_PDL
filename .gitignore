@@ -41,11 +41,12 @@ vignettes/*.pdf
 # output files
 /output/
 
-# docx_files
+# intermediate output test files
 /scripts/*.docx
+/scripts/*.pdf
 
 # rapports_intermediaires repo
-rapports_intermediaires/*.docx
+/rapports_intermediaires/
 
 # rapports_finaux repo
 /rapports_finaux/
