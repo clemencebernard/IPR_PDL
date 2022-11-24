@@ -50,3 +50,6 @@ vignettes/*.pdf
 
 # rapports_finaux repo
 /rapports_finaux/
+
+# processed_data repo
+/processed_data/
