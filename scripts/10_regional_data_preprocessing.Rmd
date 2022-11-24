@@ -8,7 +8,7 @@ output:
 always_allow_html: true
 params:
   mon_dept: "22"
-  mon_annee: "2021"
+  mon_annee: "2022"
 ---
 
 ```{r setup, include = FALSE}
@@ -624,11 +624,6 @@ reg_ope_pp <- reg_ope_pp %>%
 
 ```
 
-## densité pondérale
-
-```{r}
-
-```
 
 # sauvegarde
 
@@ -645,9 +640,6 @@ save(ma_reg,
      reg_ope,
      reg_ope_capt,
      reg_dept_capt,
-     # reg_densites_an_poissons_loc,
-     # reg_dept_poids,
- #    reg_ope_1a_eff,
      reg_mei,
      reg_longueurs,
      reg_donnees_env,
@@ -657,7 +649,6 @@ save(ma_reg,
      reg_rs,
      reg_ope_pp,
      reg_ope_env,
-#     mes_depts_geo,
      mes_reg_pop_geo,
      file = "../processed_data/reg_data.RData")
 ```

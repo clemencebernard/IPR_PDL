@@ -1,7 +1,6 @@
 ---
 output:
   pdf_document: default
-  bookdown::word_document2: default
 always_allow_html: true
 params:
   mon_ope: "87994"
