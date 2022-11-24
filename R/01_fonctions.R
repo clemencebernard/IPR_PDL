@@ -87,7 +87,7 @@ gg_temp_abondance_groupe <- function(df,
     labs(x = "",
          y = "") +
     facet_wrap(vars(!!var_espece),
-               scales = "free",
+               scales = "free_y",
                ncol = nb_colonnes) +
     scale_color_brewer(palette = "Set2") +
     theme_bw() +
