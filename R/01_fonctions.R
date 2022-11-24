@@ -89,9 +89,13 @@ gg_temp_abondance_groupe <- function(df,
     facet_wrap(vars(!!var_espece),
                scales = "free_y",
                ncol = nb_colonnes) +
+    # lemon::facet_rep_wrap(vars(esp_nom_commun),
+    #                       scales = "free_y",
+    #                       ncol = nb_colonnes) +
     scale_color_brewer(palette = "Set2") +
     theme_bw() +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
   
   if(log_axe_y)
   {

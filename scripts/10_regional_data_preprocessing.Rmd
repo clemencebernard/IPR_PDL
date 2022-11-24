@@ -7,7 +7,7 @@ output:
   bookdown::word_document2
 always_allow_html: true
 params:
-  mon_dept: "22"
+  mes_depts: !r c("22", "29", "35", "56")
   mon_annee: "2022"
 ---
 
@@ -40,22 +40,23 @@ load(rdata_mei)
 # création de la passerelle et ajout des codes dept et région
 reg_data <- mef_creer_passerelle() %>% 
   mef_ajouter_dept() %>% 
-  left_join(COGiter::departements %>% select(DEP, REG),
-            by = c("dept" = "DEP")) %>% 
-  left_join(COGiter::regions %>% select(REG,
-                                        region = NOM_REG))
+  filter(dept %in% params$mes_depts) %>% 
+  # left_join(COGiter::departements %>% select(DEP, REG),
+  #           by = c("dept" = "DEP")) %>% 
+  # left_join(COGiter::regions %>% select(REG,
+  #                                       region = NOM_REG))
 
 # Région du département choisi
-ma_reg <- reg_data %>% 
-  filter(dept == params$mon_dept) %>% 
-  slice(1) %>% 
-  pull(region) %>% 
-  as.character()
+# ma_reg <- reg_data %>% 
+#   filter(dept == params$mes_depts) %>% 
+#   slice(1) %>% 
+#   pull(region) %>% 
+#   as.character()
 
 # filtrage du jeu de données sur les réseaux, la région et l'année de départ
-reg_data <- reg_data %>%
-  select(-REG) %>%
-  filter(region == ma_reg) %>%
+# reg_data <- reg_data %>%
+  # select(-REG) %>%
+  # filter(region == ma_reg) %>%
   mef_ajouter_objectif() %>%
   mef_ajouter_ope_date() %>%
   filter(
@@ -79,7 +80,7 @@ reg_ope <- reg_data %>%
          pop_id,
          ope_id,
          dept,
-         region,
+     #    region,
          annee) %>% 
   filter(pop_id %in% mes_pts) %>% 
   distinct() %>% 
@@ -253,30 +254,15 @@ Ici la taille des points indique le pourcentage des stations échantillonnées d
 Exemple : Si, dans le 56, le chevaine a été capturé sur 8 des 16 stations prospectées en 2022. Son taux d'occurrence dans ce département est donc de 50%. 
 
 ```{r, fig.height = 9, fig.width = 7, dpi = 300}
-# reg_ope_1a_eff <- reg_ope_capt %>% 
-#   # mef_ajouter_dept() %>% 
-#   # mef_ajouter_lots() %>% 
-#   filter(annee == params$mon_annee) %>% 
-#   # mutate(esp_code_alternatif = ifelse(esp_code_alternatif == "CMI",
-#   #                                     "CCO",
-#   #                                     esp_code_alternatif)) %>% 
-#   # group_by(pop_id, dept, esp_code_alternatif) %>% 
-#   #   summarise(effectif = sum(lop_effectif),
-#   #             .groups = "drop") %>% 
-#   left_join(y = ref_espece %>% 
-#               select(esp_code_alternatif, esp_nom_commun)) %>% 
-#   mutate(esp_nom_commun2 = paste0(esp_nom_commun,
-#                                  " (",
-#                                  esp_code_alternatif,
-#                                  ")"))
-
 # mic mac pour ordonner les départements de manière aussi "emboîtée" que possible
 nb_pop_par_dept_mon_annee <- reg_ope_capt %>% 
+  filter(annee == params$mon_annee) %>% 
   group_by(dept) %>% 
     summarise(n_pop = n_distinct(pop_id))
 
 n_occ_par_esp_par_dept_mon_annee <- reg_ope_capt %>% 
-  filter(effectif > 0) %>% 
+  filter(effectif > 0,
+         annee == params$mon_annee) %>% 
   group_by(dept, esp_nom_commun) %>% 
     tally()
 
@@ -556,17 +542,21 @@ reg_ope_pp <- probabilite_presence_ipr %>%
                      esp_nom_commun))
 
 reg_ope_pa <- reg_ope_capt %>%
-  select(ope_id,
-         esp_code_alternatif,
-         effectif) %>%
+  # select(ope_id,
+  #        esp_code_alternatif,
+  #        effectif) %>%
   mutate(
- #   esp_code_alternatif = case_when(
-    #   esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
-    #   esp_code_alternatif == "GOU" ~ "GOX",
-    #   esp_code_alternatif == "VAI" ~ "PHX",
-    #   esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
-    #   TRUE ~ esp_code_alternatif
-    # ),
+   esp_code_alternatif = case_when(
+   esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
+   esp_code_alternatif == "GOU" ~ "GOX",
+   esp_code_alternatif == "VAI" ~ "PHX",
+   esp_code_alternatif %in% c("VAX", "VAR") ~ "VAN",
+   TRUE ~ esp_code_alternatif
+ )) %>% 
+  group_by(esp_code_alternatif,
+           ope_id) %>% 
+  summarise(effectif = sum(effectif, na.rm = TRUE)) %>% 
+  mutate(
     presence = ifelse(
       test = (effectif > 0),
       yes = "Présence",
@@ -595,40 +585,10 @@ reg_ope_pp <- reg_ope_pp %>%
   left_join(libelles)
 ```
 
-
-## densité numérique 
-
-```{r}
-# densites_sta <- dept_sp %>% 
-#     filter(pop_id == mon_point)
-# 
-# esp_sel <- densites_sta %>% 
-#   group_by(esp_code_alternatif) %>% 
-#   summarise(dens = sum(densite, 
-#                        na.rm = TRUE)) %>% 
-#   filter(dens > 0) %>% 
-#   pull(esp_code_alternatif)
-# 
-# densites_sta <- densites_sta %>% 
-#   filter(esp_code_alternatif %in% esp_sel) %>% 
-#   mutate(annee = as.integer(annee))
-# 
-# ggplot(data = densites_sta,
-#        aes(x = annee,
-#                          y = densite)) + 
-#   geom_line() + 
-#   facet_wrap(~ esp_code_alternatif, 
-#              scales = "free_y") +
-#  scale_x_continuous(labels = scales::label_number(big.mark = "",
-#                                                   accuracy = 1))
-
-```
-
-
 # sauvegarde
 
 ```{r}
-save(ma_reg,
+save(#ma_reg,
      mes_ope_reg,
      ecr,
      eee,
