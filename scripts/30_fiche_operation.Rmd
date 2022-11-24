@@ -78,7 +78,7 @@ reg_ope_env %>%
 
 # IPR
 
-```{r}
+```{r, fig.height = 4}
 classe_ipr <- classe_ipr %>%
   aspe::ip_completer_classes_couleur()
 
@@ -90,23 +90,42 @@ aspe::gg_temp_ipr(df_ipr = pop_ipr,
                   var_id_sta = pop_libelle,
                   var_ipr = ipr,
                   df_classes = classe_ipr) +
-  labs(title = "")
+  labs(title = "") +
+    theme(
+    panel.grid.major.x = element_line(size = .2,
+                                      color = "grey80"),
+    panel.grid.major.y = element_blank(),
+    legend.position = "right"
+  ) +
+  guides(fill = guide_legend(title = "Classe de qualité",
+                             nrow = 5,
+                             byrow = TRUE))
 ```
 
-```{r, fig.width = 8, fig.height = 7}
-reg_ope_metrique %>% 
-  filter(pop_id == mon_pop) %>% 
-  mutate(metrique = str_replace(string = metrique,
-                                pattern = "opi_",
-                                replacement = ""),
-         metrique = str_to_upper(metrique)) %>% 
+```{r, fig.width = 8, fig.height = 5.5}
+reg_ope_metrique %>%
+  filter(pop_id == mon_pop) %>%
+  mutate(
+    metrique = str_replace(
+      string = metrique,
+      pattern = "opi_",
+      replacement = ""
+    ),
+    metrique = str_to_upper(metrique)
+  ) %>%
   ggplotExtra::gg_lattice_ipr(
-  var_y = valeur,
-  var_lattice = metrique,
-  metriques = TRUE,
-  interactif = FALSE,
-  df_classes = classe_ipr
-)
+    var_y = valeur,
+    var_lattice = metrique,
+    metriques = TRUE,
+    interactif = FALSE,
+    df_classes = classe_ipr
+  ) +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_line(size = .2, color = "grey80"),
+    panel.grid.major.y = element_blank()
+  ) +
+  ggtitle("Métriques constitutives de l'IPR")
 ```
 
 # Les espèces
@@ -114,9 +133,16 @@ reg_ope_metrique %>%
 ## Abondance numérique
 
 ```{r}
-reg_ope_capt %>%
+data <- reg_ope_capt %>%
   filter(ope_id == params$mon_ope,
-         effectif > 0) %>% 
+         effectif > 0)
+
+richesse <- n_distinct(data$esp_code_alternatif)
+```
+
+
+```{r, fig.height = richesse / 4}
+data %>% 
   ggplot(aes(x = fct_reorder(esp_nom_commun, effectif),
              y = effectif)) +
   geom_bar(stat = "identity",
@@ -151,7 +177,7 @@ ma_station <- test %>%
   unique()
 ```
 
-```{r}
+```{r, fig.height = 4.5, dpi = 300}
 ggplot(data = test,
        aes(x = esp_nom_commun,
            y = ppi_valeur_probabilite,
@@ -163,7 +189,8 @@ ggplot(data = test,
        title = ma_station,
        fill = "") +
   scale_y_continuous(labels = scales::percent) +
-  theme(legend.position = "bottom",
+  theme(panel.grid.major.y = element_blank(),
+            panel.grid.minor.y = element_blank(),
         axis.text = element_text(size = 8),
         axis.text.y = element_text(colour = test$couleur),
         legend.text = element_text(size = 8),

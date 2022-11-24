@@ -217,7 +217,12 @@ dept_ipr %>%
        title = "Evolution interannuelle de l'IPR médian") +
   theme(legend.position = "right",
         strip.text.x = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+        axis.text.x = element_text(angle = 45,
+                                   hjust = 1,
+                                   vjust = 1),
+        panel.grid.major.x = element_line( size=.2,
+                                           color="grey80" ),
+        panel.grid.major.y = element_blank()) +
   geom_line(data = reg_ope_ipr_mediane,
             aes(x = annee,
                 y = ipr_med),
@@ -246,8 +251,11 @@ ggplotExtra::gg_lattice_ipr(
   interactif = FALSE,
   df_classes = dept_classe_ipr
 ) +
-  theme(legend.position = "none") +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_line( size=.2, color="grey80" ),
+        panel.grid.major.y = element_blank()) +
   ggtitle("Métriques constitutives de l'IPR")
+  
 ```
 
 Le calcul de la note IPR se fait sur 7 métriques, reposant sur les affinités écologiques des poissons et sur leur densité.
@@ -277,10 +285,22 @@ Les points correspondent à la note des IPR de la station par année.
 ```{r, fig.width = 10, fig.height = reg_ope_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(4) %>% ceiling()%>% `*`(2.5)%>% `+`(1)}
 
 dept_ipr %>%
-  gg_temp_ipr(var_id_sta = pop_libelle,
-              var_ipr = ipr,
-              nb_colonnes = 4,
-              df_classes = dept_classe_ipr)
+  gg_temp_ipr(
+    var_id_sta = pop_libelle,
+    var_ipr = ipr,
+    nb_colonnes = 4,
+    df_classes = dept_classe_ipr
+  ) +
+  guides(fill = guide_legend(
+    title = "",
+    nrow = 1,
+    byrow = TRUE
+  )) +
+  theme(
+    panel.grid.major.x = element_line(size = .2,
+                                      color = "grey80"),
+    panel.grid.major.y = element_blank()
+  )
 ```
 
 
@@ -296,12 +316,7 @@ La taille des points indique le pourcentage d’occurrence d'une espèce dans ch
 
 Exemple : Si, dans le Morbihan, le Chevaine a été capturé sur 8 des 16 stations prospectées en `r  params$mon_annee`. Son taux d’occurrence dans ce département est donc de 50%.
 
-Les espèces sont ordonées par nombre de départements de présence, puis par nombre total d’occurrences.
-
-Les écrevisses apparaissent en bleu.
-
-
-```{r, fig.height = 9, fig.width = 7, dpi = 300}
+```{r, fig.height = 8, fig.width = 7, dpi = 300}
 ggplot(data = reg_dept_1a_pc_oc,
        aes(x = dept_fct,
            y = esp_nom_commun,
@@ -319,14 +334,18 @@ ggplot(data = reg_dept_1a_pc_oc,
         legend.title = element_text(size = 9))
 ```
 
-ATENTION : Pour une meilleure lisibilité, l’échelle de l’ordonnée est en log. Ainsi, les données ne sont pas écrasées lorsqu’il y a beaucoup ou peu d’individus. 
 
-Les lignes de couleurs correspondent à la densité spécifique moyenne des départements bretons. 
+Les espèces sont ordonées par nombre de départements de présence, puis par nombre total d’occurrences.
+
+Les écrevisses apparaissent en bleu.
+
+## Les tendances des populations
+
+Les lignes de couleur indiquent, pour chaque département, la densité surfacique moyenne par espèce en fonction de l'année.
+
+NB : Pour une meilleure lisibilité, l’échelle de l’ordonnée est en log. Ainsi, les données ne sont pas écrasées lorsqu’il y a beaucoup ou peu d’individus. 
 
 Sur certaines courbes, on observe un pic tous les deux ans. Celui-ci est dû au RCS qui est réalisé un an sur deux. 
-
-L’intérêt de mettre en évidence la densité spécifique moyenne interdépartementale permet de comparer les dynamiques d’évolutions pour chacune des espèces. 
-
 
 
 ```{r}
@@ -347,8 +366,6 @@ n_ecr <- reg_dept_capt %>%
   unique() %>%
   length()
 ```
-
-
 
 
 ```{r}
@@ -527,7 +544,13 @@ map(.x = mes_especes,
     graph_mois = FALSE,
     graph_effectif = FALSE
 ) %>% 
-  map(.f = function(gg) {gg + labs(x = "Longueur (cm)")})
+  map(.f = function(gg) {
+    gg +
+      labs(x = "Longueur (cm)") +
+      theme(panel.grid.major.y = element_blank(),
+            panel.grid.minor.y = element_blank()) +
+      scale_x_continuous(breaks = scales::pretty_breaks(5))
+      })
 ```
 
 
