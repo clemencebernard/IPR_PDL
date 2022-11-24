@@ -28,12 +28,12 @@
 #'                            groupe = "56")
 #' }
 gg_temp_abondance_groupe <- function(df,
-                                     var_espece,
-                                     var_abondance,
-                                     var_groupe,
-                                     groupe,
-                                     nb_colonnes = 6,
-                                     log_axe_y = TRUE)
+                                      var_espece,
+                                      var_abondance,
+                                      var_groupe,
+                                      groupe,
+                                      nb_colonnes = 6,
+                                      log_axe_y = TRUE)
   
 {
   var_espece <- enquo(var_espece)
@@ -56,26 +56,85 @@ gg_temp_abondance_groupe <- function(df,
                                        .fun = sum,
                                        .desc = T))
   
+  # calcul des bandes pour visualiser des périodes de 5 ans
+  bandes <- seq(from = 5 * floor(min(densites$annee) / 5),
+                to = 5 * ceiling(max(densites$annee) / 5),
+                by = 5) %>%
+    as.data.frame() %>%
+    set_names("fin") %>%
+    mutate(debut = lag(fin)) %>%
+    filter(!is.na(debut)) %>%
+    select(debut, fin)
+  
+  bandes$debut[1] <- -Inf
+  
+  bandes <- bandes %>% 
+    slice(seq(1, nrow(.), 2))
+  
   # graphique
- g <- densites %>%
-    ggplot(aes(x = annee,
-               y = !!var_abondance,
-               col = !!var_groupe)) +
-    geom_line(size = 1) +
+  g <- ggplot() +
+    geom_rect(data = bandes,
+              aes(xmin = debut,
+                  xmax = fin,
+                  ymin = -Inf,
+                  ymax = Inf),
+              alpha = 0.1) +
+    geom_line(data = densites,
+              aes(x = annee,
+                  y = !!var_abondance,
+                  col = !!var_groupe),
+              size = 0.7) +
     labs(x = "",
          y = "") +
     facet_wrap(vars(!!var_espece),
-               scales = "free_y",
+               scales = "free",
                ncol = nb_colonnes) +
-    scale_color_brewer(palette = "Set2")
+    scale_color_brewer(palette = "Set2") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
   
   if(log_axe_y)
   {
     g <- g + scale_y_log10()
   }
- 
- g
+  
+  g
   
 }
 
 
+#############################################
+# fonction qui sort le rapport pour un département
+render_dept <- function(dept, annee) {
+  rmarkdown::render(
+    'scripts/20_template_dept.Rmd',
+    output_file = paste0("../rapports_intermediaires/",
+                         dept,
+                         "/rapport_dept_",
+                         dept,
+                         ".pdf"),
+    params = list(mon_dept = dept,
+                  mon_annee = annee),
+    envir = parent.frame()
+  )
+}
+
+# test
+# render_one(dept = "35")
+
+#############################################
+# fonction qui sort le rapport pour un département
+render_ope <- function(ope,
+                       nom_fichier_sortie) {
+  rmarkdown::render(
+    input = 'scripts/30_fiche_operation.Rmd',
+    output_file = nom_fichier_sortie,
+    params = list(mon_ope = ope),
+    envir = parent.frame()
+  )
+}
+
+# test
+# render_ope(ope = 87642,
+#            nom_fichier_sortie = "test.docx"
+# )
