@@ -3,7 +3,7 @@ output:
   pdf_document: default
 always_allow_html: true
 params:
-  mon_ope: "87994"
+  mon_ope: "88610"
 ---
 
 ```{r setup, include = FALSE}
@@ -149,7 +149,9 @@ data %>%
            fill = "darkgreen") +
   coord_flip() +
   labs(x = "",
-       y = "Effectif capturé")
+       y = "Effectif capturé") +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
 ```
 
 
@@ -182,7 +184,8 @@ ggplot(data = test,
        aes(x = esp_nom_commun,
            y = ppi_valeur_probabilite,
            fill = presence)) +
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity",
+           col = "white") +
   coord_flip() +
   labs(x = "",
        y = "Probabilité de présence",
@@ -190,7 +193,7 @@ ggplot(data = test,
        fill = "") +
   scale_y_continuous(labels = scales::percent) +
   theme(panel.grid.major.y = element_blank(),
-            panel.grid.minor.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
         axis.text = element_text(size = 8),
         axis.text.y = element_text(colour = test$couleur),
         legend.text = element_text(size = 8),

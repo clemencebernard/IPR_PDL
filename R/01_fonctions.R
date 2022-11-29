@@ -114,7 +114,7 @@ render_dept <- function(dept, annee) {
     'scripts/20_template_dept.Rmd',
     output_file = paste0("../rapports_intermediaires/",
                          dept,
-                         "/rapport_dept_",
+                         "/synthese_",
                          dept,
                          ".pdf"),
     params = list(mon_dept = dept,
@@ -127,7 +127,7 @@ render_dept <- function(dept, annee) {
 # render_one(dept = "35")
 
 #############################################
-# fonction qui sort le rapport pour un département
+# fonction qui sort le rapport pour une ope
 render_ope <- function(ope,
                        nom_fichier_sortie) {
   rmarkdown::render(

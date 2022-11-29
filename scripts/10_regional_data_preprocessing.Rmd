@@ -34,29 +34,15 @@ rdata_mei <- misc_nom_dernier_fichier(repertoire = "../../../../projets/ASPE/raw
 load(rdata_mei)
 ```
 
+>Départements concernés : `r params$mes_depts %>% sort() %>% paste(collapse = ", ")`.
 
+Fichier de données : `r str_replace(rdata_tables, "../../../../projets/ASPE/raw_data/rdata/", "")` 
 
 ```{r}
 # création de la passerelle et ajout des codes dept et région
 reg_data <- mef_creer_passerelle() %>% 
   mef_ajouter_dept() %>% 
   filter(dept %in% params$mes_depts) %>% 
-  # left_join(COGiter::departements %>% select(DEP, REG),
-  #           by = c("dept" = "DEP")) %>% 
-  # left_join(COGiter::regions %>% select(REG,
-  #                                       region = NOM_REG))
-
-# Région du département choisi
-# ma_reg <- reg_data %>% 
-#   filter(dept == params$mes_depts) %>% 
-#   slice(1) %>% 
-#   pull(region) %>% 
-#   as.character()
-
-# filtrage du jeu de données sur les réseaux, la région et l'année de départ
-# reg_data <- reg_data %>%
-  # select(-REG) %>%
-  # filter(region == ma_reg) %>%
   mef_ajouter_objectif() %>%
   mef_ajouter_ope_date() %>%
   filter(
@@ -80,7 +66,6 @@ reg_ope <- reg_data %>%
          pop_id,
          ope_id,
          dept,
-     #    region,
          annee) %>% 
   filter(pop_id %in% mes_pts) %>% 
   distinct() %>% 
@@ -96,11 +81,19 @@ mes_reg_pop_geo <- point_prelevement %>%
   sf::st_as_sf(coords = c("pop_coordonnees_x", "pop_coordonnees_y"),
                crs = 2154)
 
+```
 
+Suppression des points avec une seule opération (fait bugger la fiche opération qui est une synthèse pluri-annuelle).
 
-# reseau <- tod::wfs_sandre(
-#   url_wfs = "https://services.sandre.eaufrance.fr/geo/sandre",
-#   couche = "eth")
+```{r}
+reg_pops_plus_une_ope <- reg_ope %>% 
+  group_by(pop_id) %>% 
+    summarise(nb_ope = n_distinct(ope_id)) %>% 
+  filter(nb_ope > 1) %>% 
+  pull(pop_id)
+
+reg_ope <- reg_ope %>% 
+  filter(pop_id %in% reg_pops_plus_une_ope)
 ```
 
 
@@ -185,27 +178,6 @@ reg_ope_capt <- reg_ope_capt %>%
                                   esp_code_alternatif,
                                   ")")
   )
-
-
-
-
-
-# agrégation annuelle par département et par espèce
-# reg_dept_dens_num <- reg_ope_capt %>%
-#   group_by(dept, annee, esp_code_alternatif) %>%
-#     summarise(densite_qd_pres_med = median(densite, na.rm = FALSE),
-#               densite_qd_pres_moy = mean(densite, na.rm = FALSE),
-#               densite_yc_abs_moy = 1000 * sum(effectif, na.rm = FALSE) / sum(ope_surface_calculee,
-#                                                                             na.rm = FALSE)
-#               ) %>%
-#   ungroup()
-
-
-# noms d'espèces en clair
-# reg_dept_dens_num <- reg_dept_dens_num %>%
-#   left_join(y = ref_espece %>%
-#               select(esp_code_alternatif,
-#                      esp_nom_commun))
 ```
 
 ## Espèces
@@ -235,18 +207,6 @@ poissons_loc <- reg_ope_capt %>%
 ```
 
 
-### Poissons
-
-
-```{r}
-# reg_dept_dens_num_poissons_loc <- reg_dept_dens_num %>%
-#   filter(esp_nom_commun %in% poissons_loc)
-```
-
-
-
-
-
 ## Les espèces par département
 
 Ici la taille des points indique le pourcentage des stations échantillonnées dans le département où l'espèce était présente (pour la dernière année de données). Les écrevisses sont indiquées en bleu. Les espèces sont ordonnées par nombre de départements de présence, puis par nombre total d'occurrences.
@@ -269,8 +229,14 @@ n_occ_par_esp_par_dept_mon_annee <- reg_ope_capt %>%
 reg_dept_1a_pc_oc <- n_occ_par_esp_par_dept_mon_annee %>% 
   left_join(y = nb_pop_par_dept_mon_annee) %>% 
   mutate(pc_occ = n / n_pop,
-         dept_fct = as.factor(dept),
-         dept_fct = fct_relevel(dept_fct, "35", "56", "29", "22"))
+         dept_fct = as.factor(dept))
+
+# choix d'ordre des départements en Bretagne
+if("35" %in% params$mes_depts)
+{
+  reg_dept_1a_pc_oc <- reg_dept_1a_pc_oc %>% 
+    mutate(dept_fct = fct_relevel(dept_fct, "35", "56", "29", "22"))
+}
 
 ordre_esp <- reg_ope_capt %>% 
   filter(effectif > 0) %>% 
@@ -542,9 +508,6 @@ reg_ope_pp <- probabilite_presence_ipr %>%
                      esp_nom_commun))
 
 reg_ope_pa <- reg_ope_capt %>%
-  # select(ope_id,
-  #        esp_code_alternatif,
-  #        effectif) %>%
   mutate(
    esp_code_alternatif = case_when(
    esp_code_alternatif %in% c("CAA", "CAG", "CAD", "CAS") ~ "CAX",
@@ -588,8 +551,7 @@ reg_ope_pp <- reg_ope_pp %>%
 # sauvegarde
 
 ```{r}
-save(#ma_reg,
-     mes_ope_reg,
+save(mes_ope_reg,
      ecr,
      eee,
      poissons_loc,

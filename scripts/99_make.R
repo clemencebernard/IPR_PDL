@@ -4,8 +4,8 @@ source(file = "R/01_fonctions.R")
 # -------------------------------------------------
 # Paramétrage
 # Liste des départements / année
-mes_depts <- c('22', '29', '35', '56')
-# mes_depts <- c('49', '44', '53', '72', '85')
+# mes_depts <- c('22', '29', '35', '56')
+mes_depts <- c('49', '44', '53', '72', '85')
 
 mon_annee <- 2022
 
@@ -31,7 +31,8 @@ if (!dir.exists(paths = paste0("rapports_intermediaires/", dept)))
 rmarkdown::render(
   input = 'scripts/10_regional_data_preprocessing.Rmd',
   output_file = "../rapports_intermediaires/region.docx",
-  envir = parent.frame()
+  envir = parent.frame(),
+  params = list(mes_depts = mes_depts)
 )
 
 
@@ -84,7 +85,9 @@ for (i in (1:nrow(df_nommage))) {
 
 # -------------------------------------------------
 # Assemblage des rapports départementaux
-mon_dept <- '29'
+for(mon_dept in mes_depts)
+  
+{
 
 old_names <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
              pattern = "SYNTHESE_OPERATION",
@@ -97,16 +100,19 @@ file.rename(from = old_names,
             to = new_names)
 
 
+pdf_dept <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
+                   pattern = "^rapport_dept_.*.pdf",
+                   full.names = TRUE)
 
 
-
-mes_pdf <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
-                      pattern = ".pdf",
+pdf_ope <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
+                      pattern = "^\\d.*.pdf",
                       full.names = TRUE) %>% 
   sort()
 
-qpdf::pdf_combine(input = mes_pdf,
+qpdf::pdf_combine(input = c(pdf_dept, pdf_ope),
                   output = paste0("rapports_finaux/rapport_assemble_",
                   mon_dept,
                   ".pdf"))
 
+}

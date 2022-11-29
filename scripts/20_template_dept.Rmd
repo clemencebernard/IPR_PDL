@@ -316,7 +316,7 @@ La taille des points indique le pourcentage d’occurrence d'une espèce dans ch
 
 Exemple : Si, dans le Morbihan, le Chevaine a été capturé sur 8 des 16 stations prospectées en `r  params$mon_annee`. Son taux d’occurrence dans ce département est donc de 50%.
 
-```{r, fig.height = 8, fig.width = 7, dpi = 300}
+```{r, fig.height = 8, fig.width = 6, dpi = 300}
 ggplot(data = reg_dept_1a_pc_oc,
        aes(x = dept_fct,
            y = esp_nom_commun,
@@ -498,8 +498,6 @@ Seules les 10 espèces les plus abondantes sont représentées. Pour calculer de
 Les histogrammes regroupent les effectifs d’une espèce par classe de taille sur une année. En procédant ainsi, on peut identifier différentes générations qui correspondent aux piques (1 an, 1+, 2+). 
 
 En rouge, il s’agit de la médiane, indiquant la taille moyenne qui permet également d’estimer l’âge moyen de la population. 
-
-Remarque : Les classes de tailles sont adaptées pour chaque espèce. Elles ont été définies par … (demander à pascal)
 
 
 ```{r}
