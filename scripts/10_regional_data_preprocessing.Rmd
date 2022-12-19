@@ -83,20 +83,6 @@ mes_reg_pop_geo <- point_prelevement %>%
 
 ```
 
-Suppression des points avec une seule opération (fait bugger la fiche opération qui est une synthèse pluri-annuelle).
-
-```{r}
-reg_pops_plus_une_ope <- reg_ope %>% 
-  group_by(pop_id) %>% 
-    summarise(nb_ope = n_distinct(ope_id)) %>% 
-  filter(nb_ope > 1) %>% 
-  pull(pop_id)
-
-reg_ope <- reg_ope %>% 
-  filter(pop_id %in% reg_pops_plus_une_ope)
-```
-
-
 # IPR
 
 
@@ -182,28 +168,27 @@ reg_ope_capt <- reg_ope_capt %>%
 
 ## Espèces
 
-On a des graphiques séparés pour les écrevisses, les poissons EEE et les autres espèces. Les espèces sont ordonnées par densités moyennes décroissantes. Les échelles des axes des densités sont différents selon les espèces pour éviter que les plus abondantes n'écrasent les autres qui deviendraient illisibles.
+On a des graphiques séparés pour les écrevisses et les poissons. Les échelles des axes des densités sont différents selon les espèces pour éviter que les plus abondantes n'écrasent les autres qui deviendraient illisibles.
 
 On a en ordonnée la densité moyenne du taxon chaque dans le département.
 
 
-
 ```{r}
 # Liste des noms d'espèces par groupe
-ecr <- ref_espece %>% 
+reg_ecr <- ref_espece %>% 
   filter(str_detect(esp_nom_commun, "Ecrevisse") | esp_code_alternatif == "APT") %>% 
   filter(esp_code_alternatif != "ECR") %>% 
   pull(esp_nom_commun)
+# 
+# eee <- ref_espece %>% 
+#   filter(esp_code_alternatif %in% c("PES", "PCH", "PSR", "OPG")) %>% 
+#   pull(esp_nom_commun)
 
-eee <- ref_espece %>% 
-  filter(esp_code_alternatif %in% c("PES", "PCH", "PSR", "OPG")) %>% 
-  pull(esp_nom_commun)
-
-poissons_loc <- reg_ope_capt %>% 
+reg_poissons <- reg_ope_capt %>% 
   pull(esp_nom_commun) %>% 
   unique() %>% 
-  setdiff(eee) %>% 
-  setdiff(ecr)
+#  setdiff(eee) %>% 
+  setdiff(reg_ecr)
 ```
 
 
@@ -476,9 +461,12 @@ reg_donnees_env <- reg_ope_env %>%
 ## Métriques IPR
 
 ```{r}
-reg_ope_metrique <- operation_ipr %>% 
-  filter(opi_ope_id %in% mes_ope_reg) %>%
-  rename(ope_id = opi_ope_id) %>% 
+reg_ope_metrique <- reg_ope_ipr %>% 
+  select(ope_id,
+         dept) %>% 
+  distinct() %>% 
+  left_join(y = operation_ipr %>% 
+              rename(ope_id = opi_ope_id)) %>% 
   mef_ajouter_ope_date() %>% 
   left_join(y = operation %>% 
               select(ope_id,
@@ -487,10 +475,12 @@ reg_ope_metrique <- operation_ipr %>%
          ope_date,
          annee,
          pop_id,
+         dept,
          opi_ner:opi_dti) %>% 
   select(-ope_date) %>% 
   pivot_longer(cols = opi_ner:opi_dti,
-          names_to = "metrique", values_to = "valeur")
+               names_to = "metrique",
+               values_to = "valeur")
 ```
 
 # A la station dans la région
@@ -552,9 +542,9 @@ reg_ope_pp <- reg_ope_pp %>%
 
 ```{r}
 save(mes_ope_reg,
-     ecr,
-     eee,
-     poissons_loc,
+     reg_ecr,
+   #  eee,
+     reg_poissons,
      reg_dept_1a_pc_oc,
      couleurs_ecr,
      classe_ipr,

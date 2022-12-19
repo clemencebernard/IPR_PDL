@@ -4,8 +4,8 @@ source(file = "R/01_fonctions.R")
 # -------------------------------------------------
 # Paramétrage
 # Liste des départements / année
-# mes_depts <- c('22', '29', '35', '56')
-mes_depts <- c('49', '44', '53', '72', '85')
+mes_depts <- c('22', '29', '35', '56')
+# mes_depts <- c('49', '44', '53', '72', '85')
 
 mon_annee <- 2022
 
@@ -71,6 +71,19 @@ df_nommage <- reg_ope %>%
          part = str_replace_all(part, " ", "_"),
          part = str_replace_all(part, "'", "_"))
 
+
+# Suppression des points avec une seule opération (fait bugger la fiche opération qui est une synthèse pluri-annuelle).
+
+reg_pops_plus_une_ope <- reg_ope %>% 
+  group_by(pop_id) %>% 
+  summarise(nb_ope = n_distinct(ope_id)) %>% 
+  filter(nb_ope > 1) %>% 
+  pull(pop_id)
+
+df_nommage <- df_nommage %>% 
+  filter(pop_id %in% reg_pops_plus_une_ope)
+
+
 # boucle
 for (i in (1:nrow(df_nommage))) {
   
@@ -101,8 +114,8 @@ file.rename(from = old_names,
 
 
 pdf_dept <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
-                   pattern = "^rapport_dept_.*.pdf",
-                   full.names = TRUE)
+                       pattern = "^synthese_.*.pdf",
+                       full.names = TRUE)
 
 
 pdf_ope <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
