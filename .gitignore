@@ -53,3 +53,6 @@ vignettes/*.pdf
 
 # processed_data repo
 /processed_data/
+
+# raw_data repo
+/raw_data/
