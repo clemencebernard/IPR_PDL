@@ -107,6 +107,113 @@ gg_temp_abondance_groupe <- function(df,
 }
 
 
+#' Produire la carte départementale IPR
+#'
+#' @param dept_sel Entier. Numéro du département choisi.
+#' @param annee_sel Entier. Année choisie (l'année précedents sera aussi représentée).
+#' @param fc_osm SpatRaster. Fond de carte OpenStreetMap.
+#' @param hydro_units sf. Découpage des bassins hydrographiques. Doit comprendre un champ DEP
+#' @param depts sf. Découpage des départements. Doit comprendre un champ DEP
+#' @param points sf. Points IPR qui doit comporter des champs annee (numérique) et cli_libelle,
+#'     codé "Très bon", "Bon", "Moyen", "Médiocre", "Mauvais".
+#'
+#' @return La carte ggplot2.
+#' @export
+#'
+#' \dontrun{
+#' gg_carte_ipr_dept(dept_sel = 22,
+#' annee_sel = 2022,
+#' fc_osm = bpdl_osm,
+#' hydro_units = hydro_units,
+#' depts = mes_depts_geo,
+#' points = dept_ipr)
+#' }
+gg_carte_ipr_dept <- function(dept_sel,
+                              annee_sel,
+                              fc_osm,
+                              hydro_units,
+                              depts,
+                              points)
+  
+{
+  # gestion type des arguments
+  if(!is.numeric(annee_sel)) annee_sel <- as.numeric(annee_sel)
+  if(!is.character(dept_sel)) dept_sel <- as.numeric(dept_sel)
+  
+  points <- points %>% 
+    filter(dept == dept_sel)
+  
+  # emprise de la carte
+  box <- hydro_units %>%
+    filter(DEP == dept_sel) %>%
+    sf::st_bbox()
+  
+  x_lim = box[c(1, 3)]
+  y_lim = box[c(2, 4)]
+  
+  # une ou deux années de données ?
+  # n_annees <- points %>% 
+  #   pull(annee) %>% 
+  #   n_distinct()
+  
+  # graphique
+  g <- ggplot() +
+    # fond de carte OSM
+    tidyterra::geom_spatraster_rgb(data = fc_osm) +
+    # BV
+    geom_sf(data = hydro_units %>% filter(DEP == dept_sel),
+            col = "gray50",
+            alpha = 0,
+            size = 0.2) +
+    # départements
+    geom_sf(data = depts,
+            aes(fill= (DEP == dept_sel),
+                alpha = (DEP == dept_sel)),
+            show.legend = FALSE,
+            size = 1)
+  
+  # if(n_annees == 2)
+  # 
+  # {
+  #   # points IPR
+   g <- g +
+     geom_sf(data = points,
+            aes(col = cli_libelle,
+                size = 1 * (annee == annee_sel))) +
+     scale_size(range = c(2.5, 4), # taille des points
+                breaks = c(0, 1),
+                name = "Année",
+                labels = c((annee_sel - 1), annee_sel))
+ #  }else{
+ #    g <- g +
+ #      geom_sf(data = points,
+ #              aes(col = cli_libelle),
+ #              size = 4)
+ # }
+   g +
+    # mise en forme
+    scale_alpha_manual(values = c(0.5, 0)) + # départements périphériques affichés avec transparence
+    scale_fill_manual(values = c("gray50", "black")) + # départements périphériques affichés en gris
+    scale_color_manual(values = c("Très bon" = "blue", # palette des classes de qualité
+                                  "Bon" = "green",
+                                  "Moyen" = "yellow",
+                                  "Médiocre" = "orange",
+                                  "Mauvais" = "red"),
+                       name = "Classe IPR") +
+
+    # emprise de la carte
+    coord_sf(x_lim, y_lim, expand = FALSE) +
+    theme(legend.position="bottom", legend.box="vertical", legend.margin=margin()) #+
+  #  guides(col = guide_legend(nrow = 2, byrow = TRUE))
+  
+}
+
+
+
+
+
+
+
 #############################################
 # fonction qui sort le rapport pour un département
 render_dept <- function(dept, annee) {

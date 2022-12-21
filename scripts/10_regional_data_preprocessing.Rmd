@@ -75,12 +75,9 @@ reg_ope <- reg_data %>%
 mes_ope_reg <- reg_ope %>% 
   pull(ope_id)
 
-# objet classe sf de points sélectionnés
-mes_reg_pop_geo <- point_prelevement %>% 
-  filter(pop_id %in% mes_pts) %>% 
-  sf::st_as_sf(coords = c("pop_coordonnees_x", "pop_coordonnees_y"),
-               crs = 2154)
-
+# df des points sélectionnés
+mes_reg_pop <- point_prelevement %>% 
+  filter(pop_id %in% mes_pts)
 ```
 
 # IPR
@@ -561,7 +558,7 @@ save(mes_ope_reg,
      reg_rs,
      reg_ope_pp,
      reg_ope_env,
-     mes_reg_pop_geo,
+     mes_reg_pop,
      file = "../processed_data/reg_data.RData")
 ```
 
