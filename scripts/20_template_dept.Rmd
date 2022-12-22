@@ -86,13 +86,16 @@ Cette synthèse expose l’état des peuplements ichtyologiques à travers l’I
 
 Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation.
 
-```{r, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points plus petits.")}
+```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points plus petits.")}
 gg_carte_ipr_dept(dept_sel = params$mon_dept,
                   annee_sel = params$mon_annee,
                   fc_osm = bpdl_osm,
                   hydro_units = reg_hydro_units,
                   depts = mes_depts_geo_plus_adj,
-                  points = reg_pops_ipr_annee_geo)
+                  points = reg_pops_ipr_annee_geo,
+                  couche_add_1 = me_plansdo,
+                  couche_add_2 = me_drains_ppx)
+
 ```
 
 \newpage

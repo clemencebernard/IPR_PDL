@@ -4,8 +4,8 @@ source(file = "R/01_fonctions.R")
 # -------------------------------------------------
 # Paramétrage
 # Liste des départements / année
-mes_depts <- c('22', '29', '35', '56')
-# mes_depts <- c('49', '44', '53', '72', '85')
+# mes_depts <- c('22', '29', '35', '56')
+mes_depts <- c('49', '44', '53', '72', '85')
 
 mon_annee <- 2022
 
@@ -32,10 +32,18 @@ rmarkdown::render(
   input = 'scripts/10_regional_data_preprocessing.Rmd',
   output_file = "../rapports_intermediaires/region.docx",
   envir = parent.frame(),
-  params = list(mes_depts = mes_depts)
+  params = list(mes_depts = mes_depts,
+                mon_annee = mon_annee)
 )
 
-
+# prétraitements géographiques
+rmarkdown::render(
+  input = 'scripts/15_regional_geo_data_preprocessing.Rmd',
+  output_file = "../rapports_intermediaires/region_geo.docx",
+  envir = parent.frame(),
+  params = list(mes_depts = mes_depts,
+                mon_annee = mon_annee)
+)
 # -------------------------------------------------
 # production des synthèses par département
 for (dept in mes_depts) {

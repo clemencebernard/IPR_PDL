@@ -92,12 +92,29 @@ bpdl_osm <- maptiles::get_tiles(x = reg_hydro_units,
 ```
 
 ```{r}
+list.files("../raw_data")
+me_drains_ppx <- st_read("../raw_data/ME_CE_drains_prcpx_03_2014_DIR2_L93.shp")
+me_plansdo <- st_read("../raw_data/ME_PLAN_DEAU_03_2014_DIR2_L93.shp")
+me_transition <- st_read("../raw_data/ME_TRANSITION_03_2014_DIR2_L93.shp")
+
+# mapview::mapview(drains_ppx) +
+#   mapview::mapview(plansdo) +
+#   mapview::mapview(me_transition)
+# 
+# reseau_hydro <- 
+
+```
+
+
+```{r}
 ####### sauvegarde
 # Rdata
-save(#mes_depts_geo,
-     mes_depts_geo_plus_adj,
+save(mes_depts_geo_plus_adj,
      reg_pops_ipr_annee_geo,
      reg_hydro_units,
+     me_drains_ppx,
+     me_plansdo,
+     me_transition,
      file = "../processed_data/reg_geo_data.RData")
 
 # fond de carte (ne peut pas être sauvé en RData)

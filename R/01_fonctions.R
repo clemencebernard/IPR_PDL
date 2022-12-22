@@ -116,7 +116,7 @@ gg_temp_abondance_groupe <- function(df,
 #' @param depts sf. Découpage des départements. Doit comprendre un champ DEP
 #' @param points sf. Points IPR qui doit comporter des champs annee (numérique) et cli_libelle,
 #'     codé "Très bon", "Bon", "Moyen", "Médiocre", "Mauvais".
-#'
+#' @param couche_add_1,couche_add_2,couche_add_3 sf. Couches additionnelles à afficher
 #' @return La carte ggplot2.
 #' @export
 #'
@@ -133,7 +133,10 @@ gg_carte_ipr_dept <- function(dept_sel,
                               fc_osm,
                               hydro_units,
                               depts,
-                              points)
+                              points,
+                              couche_add_1 = NULL,
+                              couche_add_2 = NULL,
+                              couche_add_3 = NULL)
   
 {
   # gestion type des arguments
@@ -159,8 +162,18 @@ gg_carte_ipr_dept <- function(dept_sel,
   # graphique
   g <- ggplot() +
     # fond de carte OSM
-    tidyterra::geom_spatraster_rgb(data = fc_osm) +
+    tidyterra::geom_spatraster_rgb(data = fc_osm)
+    
+    # potentielles couches additionnelles (ex : réseau hydro) 
+    if(!is.null(couche_add_1)) {g <- g + geom_sf(data = couche_add_1,
+                                                 col = "blue")}
+    if(!is.null(couche_add_2)) {g <- g + geom_sf(data = couche_add_2,
+                                                 col = "blue")}
+    if(!is.null(couche_add_3)) {g <- g + geom_sf(data = couche_add_3,
+                                                 col = "blue")}
+  
     # BV
+  g <- g +
     geom_sf(data = hydro_units %>% filter(DEP == dept_sel),
             col = "gray50",
             alpha = 0,
@@ -190,7 +203,11 @@ gg_carte_ipr_dept <- function(dept_sel,
  #              aes(col = cli_libelle),
  #              size = 4)
  # }
-   g +
+   # 
+
+   
+   
+   g <- g +
     # mise en forme
     scale_alpha_manual(values = c(0.5, 0)) + # départements périphériques affichés avec transparence
     scale_fill_manual(values = c("gray50", "black")) + # départements périphériques affichés en gris
@@ -199,12 +216,18 @@ gg_carte_ipr_dept <- function(dept_sel,
                                   "Moyen" = "yellow",
                                   "Médiocre" = "orange",
                                   "Mauvais" = "red"),
-                       name = "Classe IPR") +
+                       name = "Classe IPR")
+   
 
+ 
     # emprise de la carte
+   g <- g +
     coord_sf(x_lim, y_lim, expand = FALSE) +
-    theme(legend.position="bottom", legend.box="vertical", legend.margin=margin()) #+
-  #  guides(col = guide_legend(nrow = 2, byrow = TRUE))
+    theme(legend.position = "bottom",
+          legend.box = "vertical",
+          legend.margin = margin())
+   
+   g
   
 }
 
