@@ -5,7 +5,8 @@ source(file = "R/01_fonctions.R")
 # Paramétrage
 # Liste des départements / année
 # mes_depts <- c('22', '29', '35', '56')
-mes_depts <- c('49', '44', '53', '72', '85')
+# mes_depts <- c('49', '44', '53', '72', '85')
+mes_depts <- c('09', '11', '12', '30', '31', '32', '34', '46', '48', '65', '66', '81', '82')
 
 mon_annee <- 2022
 
@@ -125,13 +126,17 @@ pdf_dept <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
                        pattern = "^synthese_.*.pdf",
                        full.names = TRUE)
 
+pdf_intercalaire <- list.files(path = paste0("rapports_intermediaires/"),
+                               pattern = "^intercalaire.*.pdf",
+                               full.names = TRUE)
+
 
 pdf_ope <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
                       pattern = "^\\d.*.pdf",
                       full.names = TRUE) %>% 
   sort()
 
-qpdf::pdf_combine(input = c(pdf_dept, pdf_ope),
+qpdf::pdf_combine(input = c(pdf_dept, pdf_intercalaire, pdf_ope),
                   output = paste0("rapports_finaux/rapport_assemble_",
                   mon_dept,
                   ".pdf"))

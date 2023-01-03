@@ -7,9 +7,11 @@ subtitle: "Département : `r params$mon_dept`"
 author: "OFB - DR Bretagne"
 date: "`r format(Sys.time(), 'Le %d %B %Y')`"
 # geometry: "left=2cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
+header-includes:
+  - \usepackage[font={small,it}, labelfont={bf}]{caption}
 geometry: margin=2cm
 output:
-  pdf_document:
+  bookdown::pdf_document2:
     fig_caption: yes
     extra_dependencies: ["float"]
 # header-includes:
@@ -18,13 +20,21 @@ output:
 #     \includegraphics[width=2in,height=2in]{logo_OFB_v2.png}\LARGE\\}
 #   - \posttitle{\end{center}}
 # always_allow_html: true
+bibliography: rapports_depts_peches.bib
 params:
-  mon_dept: "35"
+  mon_dept: "11"
   mon_annee: "2022"
+  afficher_graph_pops_depts: TRUE
+  afficher_graph_distri_tailles: FALSE
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.pos = "H", out.extra = "", eval.after = "fig.cap")
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.pos = "H",
+                      out.extra = "",
+                      eval.after = "fig.cap")
 ```
 
 ```{r, echo = FALSE}
@@ -71,22 +81,20 @@ derniere_date <- max(dates) %>%
 ```
 
 
-Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le département au titre des réseaux de suivi de l’état des milieux, du `r premiere_date` au `r derniere_date`. Les réseaux couverts sont : 
+Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le département au titre des réseaux de suivi de l’état des milieux, du `r premiere_date` au `r derniere_date`. Les données sont extraites de la base ASPE, administrée par l'OFB [@irz_long-term_2022]. Les réseaux couverts sont : 
 
-- RCS : Le Réseau de Contrôle de Surveillance vise à évaluer à large échelle l’état écologique et à suivre les changements à moyen terme de cet état, notamment en lien avec les mesures de gestion des milieux prévues par la DCE.
+- RCS : Le Réseau de Contrôle de Surveillance vise à évaluer à large échelle l’état écologique et à suivre les changements à moyen terme de cet état, notamment en lien avec les mesures de gestion des milieux prévues par la DCE. Il a été mis en place en 2007.
 
 - RRP : Le Réseau de Référence Pérenne est mis en œuvre pour suivre l’évolution temporelle des conditions de référence à la base de la définition du bon état écologique, notamment sous les effets du changement climatique.
 
 - RHP : Le Réseau Hydrobiologique et Piscicole, mis en place en 1990, vise à suivre sur le long terme l’état des peuplements piscicoles, à caractériser les variations interannuelles et les tendances spatio-temporelles. Il permet d’évaluer les impacts des pressions anthropiques, d'événements naturels exceptionnels et de réaliser une veille écologique des espèces.
 
 
-Une première partie est consacrée à la synthèse des résultats à l’échelle du département.
+La première partie décrit les résultats à l’échelle du département. Cette synthèse expose l’état des peuplements ichtyologiques à travers l’Indice Poissons Rivière [IPR, cf. @oberdorff_development_2002] et différentes métriques de la qualité du peuplement (richesse en espèces, occurrence, abondance, répartition en classes de taille). Ces données sont également contextualisées dans des suivis chronologiques de long terme (à partir de 1997) afin de permettre au lecteur de prendre le recul nécessaire sur les variabilités interannuelles pour mieux visualiser les éventuelles tendances temporelles. 
 
-Cette synthèse expose l’état des peuplements ichtyologiques à travers l’Indice Poissons Rivière (IPR, Oberdorff *et al.* 2001) et différentes métriques de la qualité du peuplement (richesse en espèces, occurrence, abondance, répartition en classes de taille). Ces données sont également contextualisées dans des suivis chronologiques de long terme (à partir de 1997) afin de permettre au lecteur de prendre le recul nécessaire sur les variabilités interannuelles pour mieux visualiser les éventuelles tendances temporelles. 
+Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont mises sous la forme de graphiques permettant de visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation.
 
-Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation.
-
-```{r, fig.width = 10, fig.height = 10, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points plus petits.")}
+```{r fig1, fig.width = 10, fig.height = 10, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points plus petits.")}
 gg_carte_ipr_dept(dept_sel = params$mon_dept,
                   annee_sel = params$mon_annee,
                   fc_osm = bpdl_osm,
@@ -103,6 +111,8 @@ gg_carte_ipr_dept(dept_sel = params$mon_dept,
 # Conditions d'échantillonnage
 
 ## Caractéristiques environnementales
+
+La Figure \@ref(fig:fig2) présente l’évolution temporelle des paramètres abiotiques environnementaux qui caractérisent la station. Les paramètres sont les suivants :
 
 - Granulométrie : L’axe des ordonnées varie de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
 
@@ -124,7 +134,7 @@ gg_carte_ipr_dept(dept_sel = params$mon_dept,
 - Profondeur : en cm.
 - Température : en °C.
 
-```{r, fig.width = 9, dpi = 300, fig.cap = "Evolution interannuelle des paramètres abiotiques environnementaux (valeur médiane calculée sur l'ensemble des stations du département). La ligne rouge est la médiane interannuelle depuis 2007. Les données antérieures à 2007 sont représentées en pointillés car elles sont moins fiables."}
+```{r fig2, fig.width = 9, dpi = 300, fig.cap = "Evolution interannuelle des paramètres abiotiques environnementaux. La ligne noire indique, pour chaque année, la valeur médiane calculée sur l'ensemble des stations prospectées dans le département. La ligne rouge est la médiane interannuelle depuis 2007. Les données antérieures à 2007 sont représentées en pointillés car elles sont moins fiables."}
 dept_donnees_env <- reg_donnees_env %>% 
   filter(dept == params$mon_dept) 
 
@@ -140,12 +150,14 @@ dept_donnees_env %>%
 )
 ```
 
+\newpage
+
 ## Paramètres électriques
 
-Ces graphiques présentent l’évolution des paramètres de réglage électrique ainsi que la conductivité. Ils se lisent comme les précédents.
+La Figure \@ref(fig:fig3) présente l’évolution des paramètres de réglage électrique ainsi que la conductivité. Ils se lisent comme les précédents.
 
 
-```{r, fig.width=9, dpi=300, fig.cap = "Evolution interannuelle des paramètres électriques lors des échantillonnages. Conductivité : Capacité de l’eau de la station à conduire le courant électrique (charge en ions), en µS/cm. Les paramètres du courant délivré sont l'intensité (A), la puissance (kVA) et la tension (V)."}
+```{r fig3, fig.width=9, dpi=300, fig.cap = "Evolution interannuelle des paramètres électriques lors des échantillonnages. La ligne noire indique, pour chaque année, la valeur médiane calculée sur l'ensemble des stations prospectées dans le département. La ligne rouge est la médiane interannuelle depuis 2007. Les données antérieures à 2007 sont représentées en pointillés car elles sont moins fiables. La conductivité est la capacité de l’eau de la station à conduire le courant électrique (charge en ions), en µS/cm. Les paramètres du courant délivré sont l'intensité (A), la puissance (kVA) et la tension (V)."}
 dept_donnees_env %>% 
   filter((variable %in% c("Conductivité", "Intensité", "Tension", "Puissance"))) %>% 
   ggplotExtra::gg_lattice_line(
@@ -163,12 +175,22 @@ dept_donnees_env %>%
 # Indicateur de l'état des peuplement ichtyologiques
 
 ## Tendance départementale IPR
+
+```{r}
+dept_ipr <- reg_ope_ipr %>%
+  filter(dept == params$mon_dept)
+
+dept_classe_ipr <- classe_ipr %>%
+  aspe::ip_completer_classes_couleur()
+```
  
-L’indice poissons rivière (IPR) est un indicateur de l’état des peuplements de poissons. Il mesure l’écart entre la composition d’un peuplement de poissons sur une station donnée, observée à partir d’un échantillonnage par pêche électrique, et celle attendue en situation de référence. L’IPR constitue une base standard d’interprétation de résultats d’échantillonnages piscicoles fondés sur l’occurrence et l’abondance des principales espèces de poissons d’eau douce présentes en France.
+L’indice poissons rivière (IPR) est un indicateur de l’état des peuplements de poissons [@oberdorff_development_2002]. Il mesure l’écart entre la composition d’un peuplement de poissons sur une station donnée, observée à partir d’un échantillonnage par pêche électrique, et celle attendue en situation de référence. L’IPR constitue une base standard d’interprétation de résultats d’échantillonnages piscicoles fondés sur l’occurrence et l’abondance des principales espèces de poissons d’eau douce présentes en France.
 
-Les données sont présentées depuis 2007, année de stabilisation des réseaux DCE et des protocoles d’échantillonnage.
+Les données sont présentées depuis `r min(dept_ipr$annee)`, cependant il est notable que les réseaux DCE et des protocoles d’échantillonnage ne sont stabilisés que depuis 2007. Il est donc possible que la variabilité interannuelle antérieure soit au moins partiellement imputable aux variations dans le réseau des stations prospectées.
 
-Le calcul de la note IPR est la somme de 7 métriques qui évaluent divers traits écologiques de la communauté de poissons : 3 métriques d’occurrence (présence-absence des espèces) et 4 métriques d’abondance (densités d’individus).
+Plutôt que de calculer la moyenne entre les stations pour obtenir un indicateur départemental, le choix a été fait d'agréger en calculant la médiane qui est un indicateur statistique moins influencé que la moyenne par les valeurs extrêmes qui pourraient intervenir sur certaines stations.
+
+La note IPR est la somme de 7 métriques qui évaluent divers traits écologiques de la communauté de poissons : 3 métriques d’occurrence (présence-absence des espèces) et 4 métriques d’abondance (densités d’individus).
 
 
     NTE = Nombre total d’espèces 
@@ -180,16 +202,7 @@ Le calcul de la note IPR est la somme de 7 métriques qui évaluent divers trait
     DII = Densité d’individus invertivores (qui se nourrissent principalement d’invertébrés)
    
    
-```{r}
-dept_ipr <- reg_ope_ipr %>%
-  filter(dept == params$mon_dept)
-
-dept_classe_ipr <- classe_ipr %>%
-  aspe::ip_completer_classes_couleur()
-```
-
-
-```{r, fig.width = 7, fig.height = 3, fig.cap = "Evolution interannuelle de l'IPR sur le département. Les points gris indiquent, pour chaque année, la médiane départementale de l'IPR (moins sensible aux valeurs extrêmes que la moyenne). La zone grisée délimite les quantiles 25 et 75 pourcents. Chaque année, un quart des stations présente un IPR supérieur à la zone grisée, la moitié des stations est comprise dans la zone grisée et un quart des stations a un IPR inférieur. En arrière-plan, la couleur correspond aux classes de qualités IPR, depuis « excellent » en bleu jusqu’à « mauvais » en rouge. La ligne bleue représente la tendance linéaire de la médiane départementale de l'IPR. La courbe marron est la médiane régionale de l'IPR."}
+```{r fig4, fig.width = 7, fig.height = 3, fig.cap = "Evolution interannuelle de l'IPR sur le département. Les points gris indiquent, pour chaque année, la médiane départementale de l'IPR (moins sensible aux valeurs extrêmes que la moyenne). La zone grisée délimite les quantiles 25 et 75 pourcents. Chaque année, un quart des stations présente un IPR supérieur à la zone grisée, la moitié des stations est comprise dans la zone grisée et un quart des stations a un IPR inférieur. En arrière-plan, la couleur correspond aux classes de qualités IPR, depuis « excellent » en bleu jusqu’à « mauvais » en rouge. La ligne bleue représente la tendance linéaire de la médiane départementale de l'IPR. La courbe marron est la médiane régionale de l'IPR."}
 
 dept_ipr %>%
   group_by(annee) %>%
@@ -236,7 +249,7 @@ dept_ipr %>%
 
 ## Tendance départementale des métriques
 
-Les graphiques ci-dessous se lisent comme le précédent.
+Les graphiques de la figure \@ref(fig:fig5) se lisent comme la figure \@ref(fig:fig4).
 
 ```{r}
 dept_metrique <- reg_ope_metrique %>% 
@@ -252,7 +265,7 @@ dept_metrique <- reg_ope_metrique %>%
          metrique = fct_rev(metrique))
 ```
 
-```{r, fig.width = 8, fig.height = 6, fig.cap = "Evolution interannuelle des métriques IPR médianes sur le département. Les seuils des classes de qualité sont ceux de l'IPR agrégé divisés par 7."}
+```{r fig5, fig.width = 8, fig.height = 6, fig.cap = "Evolution interannuelle des métriques IPR médianes sur le département. Les seuils des classes de qualité sont ceux de l'IPR agrégé divisés par 7."}
 ggplotExtra::gg_lattice_ipr(
   df = dept_metrique,
   var_y = mediane,
@@ -266,18 +279,17 @@ ggplotExtra::gg_lattice_ipr(
         panel.grid.major.y = element_blank())
   
 ```
-
 \newpage
 
 ## IPR par station
 
-```{r, fig.width = 10, fig.height = reg_ope_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(4) %>% ceiling() %>% `*`(2.1)%>% `+`(1), fig.cap = "Evolution interannuelle de l'IPR sur les stations du département."}
+```{r fig6, fig.width = 11, fig.height = reg_ope_ipr %>% filter(dept == params$mon_dept) %>% pull(pop_libelle) %>% unique %>% length %>% `/`(4) %>% ceiling() %>% `*`(2.1)%>% `+`(1) %>% min(13.5), fig.cap = "Evolution interannuelle de l'IPR sur les stations du département."}
 
 dept_ipr %>%
   gg_temp_ipr(
     var_id_sta = pop_libelle,
     var_ipr = ipr,
-    nb_colonnes = 4,
+    nb_colonnes = 5,
     df_classes = dept_classe_ipr
   ) +
   guides(fill = guide_legend(
@@ -288,19 +300,23 @@ dept_ipr %>%
   theme(
     panel.grid.major.x = element_line(size = .2,
                                       color = "grey80"),
-    panel.grid.major.y = element_blank()
+    panel.grid.major.y = element_blank(),
+    strip.text = ggplot2::element_text(
+            size = 11,
+            hjust = 0
+          )
   )
 ```
 
-\newpage
-
 # Les espèces
 
-## Dans la région
+## A l'échelle régionale
 
-### Occurence par département
+### Les peuplements en `r params$mon_annee`
 
-```{r, fig.height = 8, fig.width = 6, dpi = 300, fig.cap = "Comparaison entre les cortèges d'espèces des départements de la région."}
+Le suivi des espèces présentes (ou absentes) participe à la veille environnementale des réseaux ichtyologiques. Il permet notamment de préciser le diagnostic de l’état de la biodiversité (niveau de menace d’extinction via les listes rouges, évaluation de l’état de conservation) et de repérer l’arrivée de nouvelles espèces, en particulier les invasives.
+
+```{r fig7, fig.height = 8, fig.width = 8, dpi = 300, fig.cap = "Comparaison entre les cortèges d'espèces des départements de la région. La taille des points indique le pourcentage d’occurrence d'une espèce dans chaque département, c'est à dire le nombre de stations où l'espèce est observée sur le total de stations prospectées dans le département. Les espèces sont ordonées par nombre de départements de présence, puis par nombre total d’occurrences. Les écrevisses apparaissent en bleu."}
 ggplot(data = reg_dept_1a_pc_oc,
        aes(x = dept_fct,
            y = esp_nom_commun,
@@ -311,38 +327,28 @@ ggplot(data = reg_dept_1a_pc_oc,
   labs(x = "Département",
        y = "",
        size = "Taux d'occurrence") +
-  theme(legend.position = "bottom",
+  theme(#legend.position = "bottom",
         axis.text = element_text(size = 8),
         axis.text.y = element_text(colour = couleurs_ecr),
         legend.text = element_text(size = 8),
         legend.title = element_text(size = 9))
 ```
 
-La taille des points indique le pourcentage d’occurrence d'une espèce dans chaque département, c'est à dire le nombre de stations où l'espèce est observée sur le total de stations prospectées dans le département. Les espèces sont ordonées par nombre de départements de présence, puis par nombre total d’occurrences.
+Lecture : Si, dans un département, le chevaine a été capturé sur 10 des 20 stations prospectées en `r  params$mon_annee`, le taux d’occurrence de cette espèce dans ce département est de 50%.
 
-Exemple : Si, dans le Morbihan, le Chevaine a été capturé sur 8 des 16 stations prospectées en `r  params$mon_annee`. Son taux d’occurrence dans ce département est donc de 50%.
+`r if(params$afficher_graph_pops_depts)
 
-Les écrevisses apparaissent en bleu.
+{"
 
-### Tendances des populations par département
+### Tendances des populations dans la région
 
-Les lignes de couleur indiquent, pour chaque département, la densité surfacique moyenne par espèce en fonction de l'année.
+L’examen des évolutions temporelles de densité par espèce permet d’étudier au milieu d’une forte variabilité inter-annuelle, l’évolution d’une espèce sur le moyen terme.
 
-NB : Pour une meilleure lisibilité, l’échelle de l’ordonnée est en log. Ainsi, les données ne sont pas écrasées lorsqu’il y a beaucoup ou peu d’individus. 
-
-Sur certaines courbes, on observe un pic tous les deux ans. Celui-ci est dû au RCS qui est réalisé un an sur deux. 
-
+"}`
 
 ```{r}
 # Nombre de taxon par groupe
 n_reg_poissons <- length(reg_poissons)
-
-# n_eee <- reg_dept_capt %>%
-#   filter(dept == params$mon_dept,
-#          esp_nom_commun %in% eee) %>%
-#   pull(esp_nom_commun) %>%
-#   unique() %>%
-#   length()
 
 n_reg_ecr <- reg_dept_capt %>%
   filter(dept == params$mon_dept,
@@ -354,12 +360,14 @@ n_reg_ecr <- reg_dept_capt %>%
 
 
 ```{r}
-# Calcul des dimensions des figures à afficher en fonction du nombre d'espèces dans # chaque groupe.
+# Calcul des dimensions des figures à afficher en fonction du nombre d'espèces dans
+# chaque groupe.
 fig_haut_reg_poissons <- n_reg_poissons %>%
   `/`(6) %>% 
   ceiling() %>% 
   `*`(1.5) %>% 
-  `+` (0.5)
+  `+` (0.5) %>% 
+  min(12)
 
 fig_haut_reg_ecr <- n_reg_ecr %>%
   `/`(4) %>% 
@@ -375,10 +383,13 @@ fig_haut_reg_ecr <- n_reg_ecr %>%
 
 # fig_larg_eee <- n_eee * 2.35
 ```
+`r if(params$afficher_graph_pops_depts)
 
-**Ecrevisses**
+{
+ "**Ecrevisses**"
+}`
 
-```{r, fig.width = 10, fig.height = fig_haut_reg_ecr, fig.cap = "Evolution interannuelle des densités en écrevisses, comparaison entre les départements de la région."}
+```{r fig8, fig.width = 10, eval = params$afficher_graph_pops_depts, fig.height = fig_haut_reg_ecr, fig.cap = "Evolution interannuelle des densités en écrevisses, comparaison entre les départements de la région. Les lignes de couleur tracent, pour chaque département, l’évolution interannuelle de la densité surfacique moyenne (nombre d’individus pour 1000 m²) pour chaque espèce. Sur certaines courbes, on observe un pic tous les deux ans. Celui-ci est dû au pas bisannuel de suivi du réseau RCS."}
 reg_dept_capt %>% 
   filter(esp_nom_commun %in% reg_ecr) %>% 
   gg_temp_abondance_groupe(var_abondance = densite_moy,
@@ -389,20 +400,46 @@ reg_dept_capt %>%
                            log_axe_y = FALSE)
 ```
 
-**Poissons**
+`r if(params$afficher_graph_pops_depts) {"\\newpage"}`
 
-```{r, fig.width = 10, fig.height = fig_haut_reg_poissons, fig.cap = "Evolution interannuelle des densités en poissons, comparaison entre les départements de la région."}
-reg_dept_capt %>% 
+`r if(params$afficher_graph_pops_depts) {"**Poissons**"}`
+
+```{r fig9, fig.width = 10, fig.height = fig_haut_reg_poissons, eval = params$afficher_graph_pops_depts, fig.cap = "Evolution interannuelle des densités en poissons, comparaison entre les départements de la région. Les lignes de couleur tracent, pour chaque département, l’évolution interannuelle de la densité surfacique moyenne (nombre d’individus pour 1000 m²) pour chaque espèce. Sur certaines courbes, on observe un pic tous les deux ans. Celui-ci est dû au pas bisannuel de suivi du réseau RCS."}
+g <- reg_dept_capt %>% 
   filter(esp_nom_commun %in% reg_poissons) %>% 
   gg_temp_abondance_groupe(var_abondance = densite_moy,
                            var_espece = esp_nom_commun,
                            var_groupe = dept,
                            groupe = params$mon_dept,
-                           nb_colonnes = 4,
+                           nb_colonnes = 5,
                            log_axe_y = FALSE)
+
+g
 ```
 
-## Abondances
+## A l'échelle départementale
+
+### Tendances des populations dans le département
+
+```{r, fig.width = 10, fig.height = fig_haut_reg_poissons, fig.cap = "Evolution interannuelle des densités en poissons dans le département. Cette figure permet mieux que la précédente de distinguer ce qui se passe dans le département car l'échelle des ordonnées est mieux adaptée."}
+g <- reg_dept_capt %>% 
+  filter(esp_nom_commun %in% reg_poissons,
+         dept == params$mon_dept) %>% 
+  gg_temp_abondance_groupe(var_abondance = densite_moy,
+                           var_espece = esp_nom_commun,
+                         #  var_groupe = dept,
+                           groupe = params$mon_dept,
+                           nb_colonnes = 5,
+                           log_axe_y = FALSE#,
+                        # couleur_trait = couleur_dept
+                        )
+
+g
+```
+
+\newpage
+
+### Abondances en `r params$mon_annee`
 
 Le premier diagramme indique le nombre de captures par espèce dans le département pour l’année `r  params$mon_annee`. Le second s'inscrit dans une perspective de fonctionnement trophique, et montre la biomasse cumulée de ces captures par espèce. 
 
@@ -423,9 +460,6 @@ reg_dept_capt %>%
 ```
 
 
-## Abondance massique
-
-
 ```{r, fig.cap = paste0("Biomasse capturé par espèce dans le ", params$mon_dept, " en ", params$mon_annee,".")}
 reg_dept_capt %>%
   filter(dept == params$mon_dept,
@@ -441,27 +475,7 @@ reg_dept_capt %>%
        y = "Biomasse capturée (kg)")
 ```
 
-
-```{r}
-# poids_dept <- reg_dept_poids %>% 
-#   filter(dept == params$mon_dept,
-#          annee == params$mon_annee)
-```
-
-```{r}
-# ggplot(data = poids_dept,
-#        aes(x = fct_reorder(esp_nom_commun, poids),
-#            y = poids)) +
-#   geom_bar(stat = "identity",
-#            fill = "darkgreen") +
-#   coord_flip() +
-#   scale_y_continuous(labels = scales::label_number(big.mark = "",
-#                                                   accuracy = 1,
-#                                                   scale = 1e-3)) +
-#   labs(x = "",
-#        y = "Biomasse capturée (kg)")
-```
-
+\newpage
 
 ## Richesse spécifique
 
@@ -484,8 +498,9 @@ reg_rs %>%
   scale_color_brewer(palette = "Set1")
 ```
 
+`r if(params$afficher_graph_distri_tailles) {"\\newpage "}`
 
-
+`r if(params$afficher_graph_distri_tailles) {"
 
 ## Distribution en taille pour les principales espèces
 
@@ -495,10 +510,12 @@ Seules les 10 espèces les plus abondantes sont représentées. Pour calculer de
 
 Les histogrammes regroupent les effectifs d’une espèce par classe de taille sur une année. En procédant ainsi, on peut identifier différentes générations qui correspondent aux piques (1 an, 1+, 2+). 
 
-En rouge, il s’agit de la médiane, indiquant la taille moyenne qui permet également d’estimer l’âge moyen de la population. 
+En rouge, il s’agit de la médiane, indiquant la taille moyenne qui permet également d’estimer l’âge moyen de la population.
+
+"}`
 
 
-```{r}
+```{r, eval = params$afficher_graph_distri_tailles}
 # on part des mesures individuelles
 longueurs <- reg_mei %>% 
   filter(dept == params$mon_dept,
@@ -529,7 +546,7 @@ longueurs <- longueurs %>%
 
 ```
 
-```{r, fig.height = 8, results = 'hide'}
+```{r, eval = params$afficher_graph_distri_tailles, fig.height = 8, results = 'hide'}
 map(.x = mes_especes,
     .f = gg_dyn_esp,
     df = longueurs,
@@ -562,13 +579,4 @@ save(dept_classe_ipr,
      )
 ```
 
-
-\newpage
-
-
-
-
-
-
-
-# Fiches opérations
+# Bibliographie
