@@ -5,11 +5,13 @@
 #'     que deux autres, l'une pour l'espèce et l'autre pour l'abondance ou la densité.
 #' @param var_espece Nom de la variable contenant les identifiants des espèces.
 #' @param var_abondance Nom de la variable contenant les valeurs d'abondance ou de densité.
-#' @param var_groupe Nom de la variable contenant le groupe auquel appartient l'observation.
+#' @param var_groupe Caractère (facultatif). Nom de la variable contenant le groupe auquel
+#'     appartient l'observation.
 #' @param groupe Caractère. Modalité de la variable var_groupe à comparer aux autres.
 #' @param nb_colonnes Entier. Nombre (maxi) de colonnes de graphiques s'il y a plusieurs stations.
 #'     Par défaut nb_colonnes = 4.
-#' @param log_axe_y Booléen. Echelle log sur l'axe des ordonnées ? Par défaut TRUE. 
+#' @param log_axe_y Booléen. Echelle log sur l'axe des ordonnées ? Par défaut TRUE.
+#' @param couleur_trait Caractère. Couleur du trait quand pas de groupe.
 #'
 #' @return Un graphique ggplot2.
 #' @export
@@ -30,15 +32,18 @@
 gg_temp_abondance_groupe <- function(df,
                                       var_espece,
                                       var_abondance,
-                                      var_groupe,
+                                      var_groupe = NULL,
                                       groupe,
                                       nb_colonnes = 6,
-                                      log_axe_y = TRUE)
+                                      log_axe_y = TRUE,
+                                      couleur_trait = NULL)
   
 {
   var_espece <- enquo(var_espece)
   var_abondance <- enquo(var_abondance)
-  var_groupe <- enquo(var_groupe)
+ # if(!is.null(var_groupe)) {
+    var_groupe <- enquo(var_groupe)
+#    }
   
   # vecteur des espèces avec au moins une densité non nulle
   mes_especes <- df %>%
@@ -78,24 +83,35 @@ gg_temp_abondance_groupe <- function(df,
                   xmax = fin,
                   ymin = -Inf,
                   ymax = Inf),
-              alpha = 0.1) +
-    geom_line(data = densites,
+              alpha = 0.1)
+  
+  if(!is.null(var_groupe))
+    {
+    g <- g + geom_line(data = densites,
               aes(x = annee,
                   y = !!var_abondance,
                   col = !!var_groupe),
               size = 0.7) +
-    labs(x = "",
-         y = "") +
+      scale_color_brewer(palette = "Set2")
+  }else{
+    g <- g + geom_line(data = densites,
+                       aes(x = annee,
+                           y = !!var_abondance),
+                       size = 0.7,
+                       col = couleur_trait)
+  }
+  
+    g <- g +
+      labs(x = "",
+           y = "") +
     facet_wrap(vars(!!var_espece),
                scales = "free_y",
                ncol = nb_colonnes) +
-    # lemon::facet_rep_wrap(vars(esp_nom_commun),
-    #                       scales = "free_y",
-    #                       ncol = nb_colonnes) +
-    scale_color_brewer(palette = "Set2") +
     theme_bw() +
     theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank())
+          panel.grid.minor = element_blank(),
+          axis.text = element_text(size = 8)) +
+    scale_x_continuous(guide = guide_axis(n.dodge = 2))
   
   if(log_axe_y)
   {
@@ -106,7 +122,7 @@ gg_temp_abondance_groupe <- function(df,
   
 }
 
-
+# --------------------------------------------------------------
 #' Produire la carte départementale IPR
 #'
 #' @param dept_sel Entier. Numéro du département choisi.
