@@ -1,30 +1,31 @@
 ---
 title: "Synthèse pêches électriques réseaux `r params$mon_annee`"
 # title: |
-#   ![](logo_OFB_v2.png){width=1in, align="right"}  
-#   Adding a Logo to LaTeX Title
+#   ![](logo_OFB_v5.png){width=0.5in,align="right"}  
+#   Synthèse pêches électriques réseaux `r params$mon_annee`
 subtitle: "Département : `r params$mon_dept`"
 author: "OFB - DR Bretagne"
 date: "`r format(Sys.time(), 'Le %d %B %Y')`"
 # geometry: "left=2cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
 header-includes:
   - \usepackage[font={small,it}, labelfont={bf}]{caption}
+  # - \usepackage{titling}
+  # - \pretitle{\begin{center}
+  #   \includegraphics[width=1in,height=1in,position=right]{logo_OFB_v5.png}\LARGE\\}
+  # - \posttitle{\end{center}}
 geometry: margin=2cm
 output:
   bookdown::pdf_document2:
     fig_caption: yes
     extra_dependencies: ["float"]
-# header-includes:
-#   - \usepackage{titling}
-#   - \pretitle{\begin{center}
-#     \includegraphics[width=2in,height=2in]{logo_OFB_v2.png}\LARGE\\}
-#   - \posttitle{\end{center}}
-# always_allow_html: true
+    toc: yes
+    includes:
+      in_header: header.tex
 bibliography: rapports_depts_peches.bib
 params:
-  mon_dept: "11"
+  mon_dept: "56"
   mon_annee: "2022"
-  afficher_graph_pops_depts: TRUE
+  afficher_graph_pops_depts: FALSE
   afficher_graph_distri_tailles: FALSE
 ---
 
@@ -80,6 +81,7 @@ derniere_date <- max(dates) %>%
   format('%d %B %Y')
 ```
 
+\newpage
 
 Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le département au titre des réseaux de suivi de l’état des milieux, du `r premiere_date` au `r derniere_date`. Les données sont extraites de la base ASPE, administrée par l'OFB [@irz_long-term_2022]. Les réseaux couverts sont : 
 
@@ -89,10 +91,9 @@ Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le 
 
 - RHP : Le Réseau Hydrobiologique et Piscicole, mis en place en 1990, vise à suivre sur le long terme l’état des peuplements piscicoles, à caractériser les variations interannuelles et les tendances spatio-temporelles. Il permet d’évaluer les impacts des pressions anthropiques, d'événements naturels exceptionnels et de réaliser une veille écologique des espèces.
 
+La première partie décrit les résultats à l’échelle du département. Cette synthèse expose l’état des peuplements ichtyologiques à travers l’Indice Poissons Rivière [IPR, cf. @oberdorff_development_2002] et différentes métriques de la qualité du peuplement (richesse en espèces, occurrence, abondance, répartition en classes de taille). Ces données sont également contextualisées dans des suivis chronologiques de long terme (à partir de 1997) afin de permettre au lecteur de prendre le recul nécessaire sur les variabilités interannuelles pour mieux visualiser les éventuelles tendances temporelles. L’examen des évolutions temporelles de densité par espèce permet de détecter de potentielles évolutions de moyen terme malgré la variabilité interannuelle, par exemple liée aux conditions météorologiques.
 
-La première partie décrit les résultats à l’échelle du département. Cette synthèse expose l’état des peuplements ichtyologiques à travers l’Indice Poissons Rivière [IPR, cf. @oberdorff_development_2002] et différentes métriques de la qualité du peuplement (richesse en espèces, occurrence, abondance, répartition en classes de taille). Ces données sont également contextualisées dans des suivis chronologiques de long terme (à partir de 1997) afin de permettre au lecteur de prendre le recul nécessaire sur les variabilités interannuelles pour mieux visualiser les éventuelles tendances temporelles. 
-
-Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont mises sous la forme de graphiques permettant de visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation.
+Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation.
 
 ```{r fig1, fig.width = 10, fig.height = 10, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points plus petits.")}
 gg_carte_ipr_dept(dept_sel = params$mon_dept,
@@ -421,7 +422,7 @@ g
 
 ### Tendances des populations dans le département
 
-```{r, fig.width = 10, fig.height = fig_haut_reg_poissons, fig.cap = "Evolution interannuelle des densités en poissons dans le département. Cette figure permet mieux que la précédente de distinguer ce qui se passe dans le département car l'échelle des ordonnées est mieux adaptée."}
+```{r, fig.width = 10, fig.height = fig_haut_reg_poissons, fig.cap = "Evolution interannuelle des densités en poissons dans le département."}
 g <- reg_dept_capt %>% 
   filter(esp_nom_commun %in% reg_poissons,
          dept == params$mon_dept) %>% 
@@ -441,11 +442,11 @@ g
 
 ### Abondances en `r params$mon_annee`
 
-Le premier diagramme indique le nombre de captures par espèce dans le département pour l’année `r  params$mon_annee`. Le second s'inscrit dans une perspective de fonctionnement trophique, et montre la biomasse cumulée de ces captures par espèce. 
+La figure \@ref(fig:effectif) indique le nombre de captures par espèce dans le département pour l’année `r  params$mon_annee`. La figure \@ref(fig:biomasse) s'inscrit dans une perspective de fonctionnement trophique, et montre la biomasse cumulée de ces captures par espèce. 
 
 Ces graphiques sont complémentaires. Les espèces les plus abondantes en effectifs sont souvent de petite taille, donc de faible masse ; elles ne ne représentent donc pas nécessairement l'essentiel de la biomasse. 
 
-```{r, fig.cap = paste0("Effectif capturé par espèce dans le ", params$mon_dept, " en ", params$mon_annee,".")}
+```{r effectif, fig.cap = paste0("Effectif capturé par espèce dans le département en ", params$mon_annee,".")}
 reg_dept_capt %>%
   filter(dept == params$mon_dept,
          annee == params$mon_annee,
@@ -460,7 +461,7 @@ reg_dept_capt %>%
 ```
 
 
-```{r, fig.cap = paste0("Biomasse capturé par espèce dans le ", params$mon_dept, " en ", params$mon_annee,".")}
+```{r biomasse, fig.cap = paste0("Biomasse capturé par espèce dans le département en ", params$mon_annee,".")}
 reg_dept_capt %>%
   filter(dept == params$mon_dept,
          annee == params$mon_annee,
@@ -479,12 +480,7 @@ reg_dept_capt %>%
 
 ## Richesse spécifique
 
-La courbe bleue représente la variation du nombre d’espèces indigènes par an.
-
-En rouge, ce sont les effectifs d’espèces allochtones par an.
-
-Les données précédentes à 2007 sont en pointillé, car les réseaux n'étaient pas stabilisés et le protocole d'échantillonnages différait. 
-
+La courbe bleue représente la variation inter-annuelle du nombre d'espèces indigènes détectées dans le département (la richesse spécifique), celle en rouge la richesse en espèces allochtones.
 
 ```{r, fig.height=2.5, fig.width=5, fig.cap = "Nombre d'espèces capturées chaque année dans le département, selon leur statut."}
 reg_rs %>% 
@@ -495,7 +491,7 @@ reg_rs %>%
   geom_line() + 
   scale_y_continuous(limits = c(0, NA)) +
   labs(y = "Richesse spécifique", x = "", col = "Espèces") + 
-  scale_color_brewer(palette = "Set1")
+  scale_color_brewer(palette = "Set1", direction = -1)
 ```
 
 `r if(params$afficher_graph_distri_tailles) {"\\newpage "}`

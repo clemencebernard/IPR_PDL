@@ -134,6 +134,7 @@ reg_ope_capt <- reg_data %>%
   summarise(effectif = sum(lop_effectif)) %>% 
   ungroup() %>% 
   mef_ajouter_surf_calc() %>% # ajout de la surface prospectée 
+#  mef_ajouter_libelle() %>% 
   mutate(effectif = replace_na(effectif, 0)) %>% 
   droplevels()
 ```
@@ -160,7 +161,8 @@ reg_ope_capt <- reg_ope_capt %>%
                                   " (",
                                   esp_code_alternatif,
                                   ")")
-  )
+  ) %>% 
+  mef_ajouter_libelle()
 ```
 
 ## Espèces

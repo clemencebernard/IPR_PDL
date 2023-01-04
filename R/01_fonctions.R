@@ -10,7 +10,7 @@
 #' @param groupe Caractère. Modalité de la variable var_groupe à comparer aux autres.
 #' @param nb_colonnes Entier. Nombre (maxi) de colonnes de graphiques s'il y a plusieurs stations.
 #'     Par défaut nb_colonnes = 4.
-#' @param log_axe_y Booléen. Echelle log sur l'axe des ordonnées ? Par défaut TRUE.
+#' @param log_axe_y Booléen. Echelle log sur l'axe des ordonnées ? Par défaut FALSE
 #' @param couleur_trait Caractère. Couleur du trait quand pas de groupe.
 #'
 #' @return Un graphique ggplot2.
@@ -35,7 +35,7 @@ gg_temp_abondance_groupe <- function(df,
                                       var_groupe = NULL,
                                       groupe,
                                       nb_colonnes = 6,
-                                      log_axe_y = TRUE,
+                                      log_axe_y = FALSE,
                                       couleur_trait = NULL)
   
 {
@@ -110,12 +110,17 @@ gg_temp_abondance_groupe <- function(df,
     theme_bw() +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.text = element_text(size = 8)) +
+          axis.text = element_text(size = 8),
+          strip.text = element_text(size = 7)) +
     scale_x_continuous(guide = guide_axis(n.dodge = 2))
   
   if(log_axe_y)
   {
     g <- g + scale_y_log10()
+  
+    }else{
+      
+    g <- g + scale_y_continuous(limits = c(0, NA))
   }
   
   g
