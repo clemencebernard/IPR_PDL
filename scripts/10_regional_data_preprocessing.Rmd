@@ -62,14 +62,17 @@ mes_pts <- reg_data %>%
 # sélection des opérations, ajout date et libelle de la station
 # les stations qui ne sont pas échantillonées sur les deux dernières années sont exclus
 reg_ope <- reg_data %>% 
+  mef_ajouter_intervenants() %>% 
   select(sta_id,
          pop_id,
          ope_id,
          dept,
-         annee) %>% 
+         annee,
+         operateur_peche
+         ) %>% 
   filter(pop_id %in% mes_pts) %>% 
   distinct() %>% 
-  mef_ajouter_libelle()
+  mef_ajouter_libelle() 
 
 # vecteur des ope_id retenus
 mes_ope_reg <- reg_ope %>% 
@@ -134,7 +137,6 @@ reg_ope_capt <- reg_data %>%
   summarise(effectif = sum(lop_effectif)) %>% 
   ungroup() %>% 
   mef_ajouter_surf_calc() %>% # ajout de la surface prospectée 
-#  mef_ajouter_libelle() %>% 
   mutate(effectif = replace_na(effectif, 0)) %>% 
   droplevels()
 ```
@@ -162,7 +164,8 @@ reg_ope_capt <- reg_ope_capt %>%
                                   esp_code_alternatif,
                                   ")")
   ) %>% 
-  mef_ajouter_libelle()
+  mef_ajouter_libelle() %>% 
+  mef_ajouter_type_protocole()
 ```
 
 ## Espèces
@@ -398,8 +401,9 @@ reg_ope_env <- operation_description_peche %>%
          odp_puissance,
          odp_temperature_instantanee,
          odp_largeur_lame_eau,
-         odp_longueur
-         ) %>% 
+         odp_longueur,
+         odp_duree_peche) %>% 
+  mutate(long_sur_larg = odp_longueur / odp_largeur_lame_eau) %>% 
   left_join(y = operation_donnees_environnementales %>% 
               select(ope_id = ode_ope_id,
                      profondeur_moyenne = ode_profondeur_moyenne_station))
@@ -444,12 +448,15 @@ reg_ope_env <- reg_ope_env %>%
       variable == "temperature_instantanee" ~ "Température de l'eau",
       variable == "tension" ~ "Tension",
       variable == "profondeur_moyenne" ~ "Profondeur moyenne",
-      variable == "puissance" ~ "Puissance"
+      variable == "puissance" ~ "Puissance",
+      variable == "long_sur_larg" ~ "Longueur / largeur",
+      variable == "duree_peche" ~ "Temps de pêche"
     )
   ) %>% 
     left_join(y = operation %>% 
               select(ope_id,
-                     pop_id = ope_pop_id))
+                     pop_id = ope_pop_id)) %>% 
+    mutate(valeur = ifelse(valeur == 0, NA, valeur)) # les valeurs nulles sont en fait des manquantes
 
 reg_donnees_env <- reg_ope_env %>% 
   group_by(annee, variable, dept) %>%
@@ -542,7 +549,7 @@ reg_ope_pp <- reg_ope_pp %>%
 ```{r}
 save(mes_ope_reg,
      reg_ecr,
-   #  eee,
+     ref_espece, # nécessaire pour graphiques avec gg_temp_peuplement()
      reg_poissons,
      reg_dept_1a_pc_oc,
      couleurs_ecr,

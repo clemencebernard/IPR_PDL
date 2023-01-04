@@ -4,9 +4,9 @@ source(file = "R/01_fonctions.R")
 # -------------------------------------------------
 # Paramétrage
 # Liste des départements / année
-# mes_depts <- c('22', '29', '35', '56')
+mes_depts <- c('22', '29', '35', '56')
 # mes_depts <- c('49', '44', '53', '72', '85')
-mes_depts <- c('09', '11', '12', '30', '31', '32', '34', '46', '48', '65', '66', '81', '82')
+# mes_depts <- c('09', '11', '12', '30', '31', '32', '34', '46', '48', '65', '66', '81', '82')
 
 mon_annee <- 2022
 
@@ -26,6 +26,7 @@ if (!dir.exists(paths = paste0("rapports_intermediaires/", dept)))
   dir.create(path = paste0("rapports_intermediaires/", dept))
     }
   }
+
 
 # -------------------------------------------------
 # prétraitements à la région
@@ -102,6 +103,26 @@ for (i in (1:nrow(df_nommage))) {
 
 
 
+# -------------------------------------------------
+# Téléchargement, par département, des fiches opérations par défaut ASPE en pdf
+# Chaque fichier zip des opérations sur le département pour l'année considéré doit être
+# rangé dans le sous-répertoire du département (ex = "rapports_intermediaires/22" pour
+# le département des Côtes d'Armor).
+# si d'anciens fichiers trainent, il faut les supprimer
+
+# dézippage
+for(mon_dept in mes_depts)
+  
+{ 
+  
+path <- paste0("rapports_intermediaires/", dept)
+mon_zip <- list.files(path = path,
+                      pattern = "synthesesOperationsPregenerees.zip$",
+                      full.names = TRUE)
+
+unzip(mon_zip, exdir = path)
+
+}
 
 
 

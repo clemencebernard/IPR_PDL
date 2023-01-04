@@ -83,7 +83,7 @@ derniere_date <- max(dates) %>%
 
 \newpage
 
-Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le département au titre des réseaux de suivi de l’état des milieux, du `r premiere_date` au `r derniere_date`. Les données sont extraites de la base ASPE, administrée par l'OFB [@irz_long-term_2022]. Les réseaux couverts sont : 
+Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le département au titre des réseaux de suivi de l’état des milieux, du `r premiere_date` au `r derniere_date`. Ces prospections ont pu être réalisées par l'OFB ou par des prestataires. Les données sont extraites de la base ASPE, administrée par l'OFB [@irz_long-term_2022]. Les réseaux couverts sont : 
 
 - RCS : Le Réseau de Contrôle de Surveillance vise à évaluer à large échelle l’état écologique et à suivre les changements à moyen terme de cet état, notamment en lien avec les mesures de gestion des milieux prévues par la DCE. Il a été mis en place en 2007.
 
@@ -93,7 +93,7 @@ Ce rapport présente l’ensemble des pêches scientifiques réalisées dans le 
 
 La première partie décrit les résultats à l’échelle du département. Cette synthèse expose l’état des peuplements ichtyologiques à travers l’Indice Poissons Rivière [IPR, cf. @oberdorff_development_2002] et différentes métriques de la qualité du peuplement (richesse en espèces, occurrence, abondance, répartition en classes de taille). Ces données sont également contextualisées dans des suivis chronologiques de long terme (à partir de 1997) afin de permettre au lecteur de prendre le recul nécessaire sur les variabilités interannuelles pour mieux visualiser les éventuelles tendances temporelles. L’examen des évolutions temporelles de densité par espèce permet de détecter de potentielles évolutions de moyen terme malgré la variabilité interannuelle, par exemple liée aux conditions météorologiques.
 
-Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation.
+Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation. Les présences / abences d'espèces observées sur le terrain sont mises en regard de celles prédites par modélisation dans des conditions réputées "de référence" [@oberdorff_probabilistic_2001]. Une bonne adéquation entre les deux (les espèces prédites présentes le sont effectivement, tandis que celles prédites absentes ne sont pas capturées) suggère un bon état du milieu.
 
 ```{r fig1, fig.width = 10, fig.height = 10, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points plus petits.")}
 gg_carte_ipr_dept(dept_sel = params$mon_dept,
@@ -113,9 +113,9 @@ gg_carte_ipr_dept(dept_sel = params$mon_dept,
 
 ## Caractéristiques environnementales
 
-La Figure \@ref(fig:fig2) présente l’évolution temporelle des paramètres abiotiques environnementaux qui caractérisent la station. Les paramètres sont les suivants :
+La Figure \@ref(fig:fig2) présente l’évolution temporelle des paramètres environnementaux sur les stations, agrégés à l'échelle du département :
 
-- Granulométrie : L’axe des ordonnées varie de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie (voir légende ci-dessous).
+- Granulométrie : L’axe des ordonnées varie de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie.
 
       0  = Granulométrie inconnue   
       1  = Argile (<0,0039mm)   
@@ -131,9 +131,10 @@ La Figure \@ref(fig:fig2) présente l’évolution temporelle des paramètres ab
       11 = Rochers (>1 m – substrat immergé avec protubérances)    
       12 = Dalles (>1 m – substrat immergé sans protubérances)  
 
-- Largeur mouillée et longueur station sont exprimées en m.
-- Profondeur : en cm.
-- Température : en °C.
+- Largeur mouillée et longueur station sont exprimées en m. Leur ratio n'a pas d'unité.
+- Profondeur : en *cm*.
+- Température : en *°C*.
+- Temps de pêche : en *min*.
 
 ```{r fig2, fig.width = 9, dpi = 300, fig.cap = "Evolution interannuelle des paramètres abiotiques environnementaux. La ligne noire indique, pour chaque année, la valeur médiane calculée sur l'ensemble des stations prospectées dans le département. La ligne rouge est la médiane interannuelle depuis 2007. Les données antérieures à 2007 sont représentées en pointillés car elles sont moins fiables."}
 dept_donnees_env <- reg_donnees_env %>% 
