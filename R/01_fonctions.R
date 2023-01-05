@@ -187,11 +187,14 @@ gg_carte_ipr_dept <- function(dept_sel,
     
     # potentielles couches additionnelles (ex : réseau hydro) 
     if(!is.null(couche_add_1)) {g <- g + geom_sf(data = couche_add_1,
-                                                 col = "blue")}
+                                                 col = "blue",
+                                                 fill = "blue")}
     if(!is.null(couche_add_2)) {g <- g + geom_sf(data = couche_add_2,
-                                                 col = "blue")}
+                                                 col = "blue",
+                                                 fill = "blue")}
     if(!is.null(couche_add_3)) {g <- g + geom_sf(data = couche_add_3,
-                                                 col = "blue")}
+                                                 col = "blue",
+                                                 fill = "blue")}
   
     # BV
   g <- g +
@@ -200,20 +203,29 @@ gg_carte_ipr_dept <- function(dept_sel,
             alpha = 0,
             size = 0.2) +
     # départements
-    geom_sf(data = depts,
-            aes(fill= (DEP == dept_sel),
-                alpha = (DEP == dept_sel)),
+    geom_sf(data = depts %>% filter(DEP != dept_sel),
+          #  aes(fill= (DEP != dept_sel)),
+                alpha = 0.8,
+          col = "gray80",
+            show.legend = FALSE,
+            size = 1) +
+    geom_sf(data = depts %>% filter(DEP == dept_sel),
+            color = "black",
+            alpha = 0,
             show.legend = FALSE,
             size = 1)
-  
+    # 
   # if(n_annees == 2)
   # 
   # {
   #   # points IPR
    g <- g +
      geom_sf(data = points,
-            aes(col = cli_libelle,
-                size = 1 * (annee == annee_sel))) +
+            aes(fill = cli_libelle,
+                size = 1 * (annee == annee_sel)),
+            shape = 21,
+            color = "black"
+            ) +
      scale_size(range = c(2.5, 4), # taille des points
                 breaks = c(0, 1),
                 name = "Année",
@@ -231,13 +243,15 @@ gg_carte_ipr_dept <- function(dept_sel,
    g <- g +
     # mise en forme
     scale_alpha_manual(values = c(0.5, 0)) + # départements périphériques affichés avec transparence
-    scale_fill_manual(values = c("gray50", "black")) + # départements périphériques affichés en gris
-    scale_color_manual(values = c("Très bon" = "blue", # palette des classes de qualité
+
+    scale_fill_manual(values = c("Très bon" = "blue", # palette des classes de qualité
                                   "Bon" = "green",
                                   "Moyen" = "yellow",
                                   "Médiocre" = "orange",
                                   "Mauvais" = "red"),
-                       name = "Classe IPR")
+                       name = "Classe IPR",
+                      drop = FALSE) +
+     guides(fill = guide_legend(override.aes = list(size=3)))
    
 
  
