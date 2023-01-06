@@ -124,8 +124,6 @@ unzip(mon_zip, exdir = path)
 
 }
 
-
-
 # -------------------------------------------------
 # Assemblage des rapports départementaux
 for(mon_dept in mes_depts)

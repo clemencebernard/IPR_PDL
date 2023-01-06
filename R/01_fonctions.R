@@ -112,7 +112,8 @@ gg_temp_abondance_groupe <- function(df,
           panel.grid.minor = element_blank(),
           axis.text = element_text(size = 8),
           strip.text = element_text(size = 7)) +
-    scale_x_continuous(guide = guide_axis(n.dodge = 2))
+      scale_x_continuous(breaks = bandes$fin)
+   # scale_x_continuous(guide = guide_axis(n.dodge = 2))
   
   if(log_axe_y)
   {
@@ -274,22 +275,28 @@ gg_carte_ipr_dept <- function(dept_sel,
 
 #############################################
 # fonction qui sort le rapport pour un département
-render_dept <- function(dept, annee) {
+render_dept <- function(dept,
+                        annee,
+                        afficher_graph_pops_depts = FALSE,
+                        afficher_graph_distri_tailles = FALSE) {
   rmarkdown::render(
-    'scripts/20_template_dept.Rmd',
+    'scripts/20_template_dept_complet_histo_comparaisons_depts.Rmd',
     output_file = paste0("../rapports_intermediaires/",
                          dept,
                          "/synthese_",
                          dept,
                          ".pdf"),
     params = list(mon_dept = dept,
-                  mon_annee = annee),
+                  mon_annee = annee#,
+               #   afficher_graph_pops_depts = afficher_graph_pops_depts,
+              #    afficher_graph_distri_tailles = afficher_graph_distri_tailles
+              ),
     envir = parent.frame()
   )
 }
 
 # test
-# render_one(dept = "35")
+# render_dept(dept = "22", annee = "2022")
 
 #############################################
 # fonction qui sort le rapport pour une ope
