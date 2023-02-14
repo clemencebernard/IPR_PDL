@@ -96,7 +96,7 @@ La première partie décrit les résultats à l’échelle du département. Cett
 
 Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation. Les présences / abences d'espèces observées sur le terrain sont mises en regard de celles prédites par modélisation dans des conditions réputées "de référence" [@oberdorff_probabilistic_2001]. Une bonne adéquation entre les deux (les espèces prédites présentes le sont effectivement, tandis que celles prédites absentes ne sont pas capturées) suggère un bon état du milieu.
 
-```{r fig1, fig.width = 10, fig.height = 10, dpi = 300, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points de plus petite taille.")}
+```{r fig1, fig.width = 10, fig.height = 10, dpi = 300, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points de plus petite taille. Les principaux cours d'eau et les estuaires sont indiqués en bleu foncé, les limites de bassins en gris. Sources : Fond de carte OpenStreetMap, référentiel hydrographique SANDRE, données poisson Aspe")}
 gg_carte_ipr_dept(dept_sel = params$mon_dept,
                   annee_sel = params$mon_annee,
                   fc_osm = bpdl_osm,
@@ -383,7 +383,7 @@ fig_haut_reg_ecr <- n_reg_ecr %>%
 
 ## Tendances des populations dans le département
 
-```{r fig8, fig.width = 10, fig.height = fig_haut_reg_poissons, fig.cap = "Evolution interannuelle des densités en poissons dans le département."}
+```{r fig8, fig.width = 10, fig.height = fig_haut_reg_poissons, fig.cap = "Evolution interannuelle des densités en poissons dans le département (en nombre d'individus par m²)."}
 g <- reg_dept_capt %>% 
   filter(esp_nom_commun %in% reg_poissons,
          dept == params$mon_dept) %>% 

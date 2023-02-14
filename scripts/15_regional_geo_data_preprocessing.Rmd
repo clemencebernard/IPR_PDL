@@ -7,7 +7,8 @@ output:
   bookdown::word_document2
 always_allow_html: true
 params:
-  mes_depts: !r c("22", "29", "35", "56")
+  # mes_depts: !r c("22", "29", "35", "56")
+  mes_depts: !r c("44", "49", "53", "72", "85")
   mon_annee: "2022"
   mon_crs: 4326
 ---
@@ -96,13 +97,6 @@ list.files("../raw_data")
 me_drains_ppx <- st_read("../raw_data/ME_CE_drains_prcpx_03_2014_DIR2_L93.shp")
 me_plansdo <- st_read("../raw_data/ME_PLAN_DEAU_03_2014_DIR2_L93.shp")
 me_transition <- st_read("../raw_data/ME_TRANSITION_03_2014_DIR2_L93.shp")
-
-# mapview::mapview(drains_ppx) +
-#   mapview::mapview(plansdo) +
-#   mapview::mapview(me_transition)
-# 
-# reseau_hydro <- 
-
 ```
 
 

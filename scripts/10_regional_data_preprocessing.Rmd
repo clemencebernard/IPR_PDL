@@ -7,7 +7,8 @@ output:
   bookdown::word_document2
 always_allow_html: true
 params:
-  mes_depts: !r c("22", "29", "35", "56")
+#  mes_depts: !r c("22", "29", "35", "56")
+  mes_depts: !r c("44", "49", "53", "72", "85")
   mon_annee: "2022"
 ---
 

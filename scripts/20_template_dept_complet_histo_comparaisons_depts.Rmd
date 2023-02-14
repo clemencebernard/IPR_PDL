@@ -98,7 +98,7 @@ La première partie décrit les résultats à l’échelle du département. Cett
 
 Une deuxième partie présente les fiches de résultats bruts et élaborés à l’échelle de la station. Pour une meilleure compréhension, les données sont représentées graphiquement pour visualiser l’évolution de la classe de qualité IPR, de ses métriques, et un panel de variables écologiques facilitant l’interprétation. Les présences / abences d'espèces observées sur le terrain sont mises en regard de celles prédites par modélisation dans des conditions réputées "de référence" [@oberdorff_probabilistic_2001]. Une bonne adéquation entre les deux (les espèces prédites présentes le sont effectivement, tandis que celles prédites absentes ne sont pas capturées) suggère un bon état du milieu.
 
-```{r fig1, fig.width = 10, fig.height = 10, dpi = 300, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points de plus petite taille.")}
+```{r fig1, fig.width = 10, fig.height = 10, dpi = 300, fig.cap = paste0("Carte du département et stations réseaux. Pour chaque station la couleur correspond à la dernière année disponible. Les stations réseaux qui ne sont prospectées qu'une année sur deux sont toutes portées sur la carte, mais celles qui n'ont été prospectées qu'en ", as.integer(params$mon_annee) - 1, " sont représentées par des points de plus petite taille. Les principaux cours d'eau et les estuaires sont indiqués en bleu foncé, les limites de bassins en gris. Sources : Fond de carte OpenStreetMap, référentiel hydrographique SANDRE, données poisson Aspe")}
 gg_carte_ipr_dept(dept_sel = params$mon_dept,
                   annee_sel = params$mon_annee,
                   fc_osm = bpdl_osm,
@@ -584,6 +584,8 @@ save(dept_classe_ipr,
 
 # Liste rouge
 
+Pour mettre en perspective les résultats des pêches, le tableau ci-dessous indique les statuts liste rouge des espèces de poissons [@iucn_poissons_2019] et d'écrevisses [@iucn_crustaces_2012] qui ont été capturées au moins une fois dans le département à l'occasion des pêches réseaux.
+
 ```{r tab1, fig.cap="Statut liste rouge des espèces du département (IUCN, 2019). CR: En danger critique, EN: En danger, VU: vulnérable, NT: Quasi menacée, LC: Préoccupation mineure, LR/lc: Risque faible / Préoccupation mineure."}
 data("liste_rouge")
 
@@ -615,11 +617,9 @@ lr_dept %>%
     flextable() %>% 
   set_header_labels(`c1` = "Espèce", `c2` = "LR FR", `c3` = "LR Monde", `c4` = "LR Europe",
                     `c5` = "Espèce", `c6` = "LR FR", `c7` = "LR Monde", `c8` = "LR Europe") %>% 
-
-#  colformat_num(j = 5, big.mark = " ") %>% 
-#  style(j = 1:2, pr_p = fp_par(text.align = "left")) %>% 
+  vline(j = 4) %>% 
   set_table_properties(layout = "autofit", width = 1) %>% 
-  bold(j = c(1,5)) %>% 
+  bold(j = c(1,5), part = "all") %>% 
   fontsize(size = 10, part = "all")
 ```
 
