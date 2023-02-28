@@ -120,7 +120,7 @@ reg_data <- reg_data %>%
   filter(!esp_code_alternatif %in% c("HBG", "CYP")) %>% 
   mutate(esp_code_alternatif = case_when(   # recodages à l'espèce
     esp_code_alternatif %in% c("CCU", "CCX", "CMI") ~ "CCO",
-    esp_code_alternatif %in% c("CAG", "CAD", "CAA", "CAS", "CAX") ~ "CAR",
+    esp_code_alternatif %in% c("CAG", "CAD", "CAA", "CAS", "CAX") ~ "CAX",
     esp_code_alternatif == "VAN" ~ "VAR",
     esp_code_alternatif == "BRX" ~ "BRE",
     esp_code_alternatif == "GOX" ~ "GOU",
