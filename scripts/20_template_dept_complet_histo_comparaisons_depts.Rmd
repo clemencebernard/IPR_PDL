@@ -587,7 +587,7 @@ save(dept_classe_ipr,
 Pour mettre en perspective les résultats des pêches, le tableau ci-dessous indique les statuts liste rouge des espèces de poissons [@iucn_poissons_2019] et d'écrevisses [@iucn_crustaces_2012] qui ont été capturées au moins une fois dans le département à l'occasion des pêches réseaux.
 
 ```{r tab1, fig.cap="Statut liste rouge des espèces du département (IUCN, 2019). CR: En danger critique, EN: En danger, VU: vulnérable, NT: Quasi menacée, LC: Préoccupation mineure, LR/lc: Risque faible / Préoccupation mineure."}
-data("liste_rouge")
+# data("liste_rouge")
 
 lr_dept <- reg_dept_capt %>% 
   ungroup() %>% 
@@ -597,7 +597,7 @@ lr_dept <- reg_dept_capt %>%
               select(esp_nom_commun,
                      esp_code_alternatif)) %>% 
   unique() %>% 
-  left_join(y = liste_rouge) %>% 
+  left_join(y = data_liste_rouge) %>% 
   select(esp_nom_commun,
          starts_with("statut")) %>% 
   filter(!(is.na(statut_lr_fr) & is.na(statut_lr_int) & is.na(statut_lr_eu)))

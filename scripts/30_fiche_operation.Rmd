@@ -12,8 +12,8 @@ output:
       in_header: FigNonNumerotees.tex
 always_allow_html: true
 params:
- # mon_ope: "88677"
-  mon_ope: "87653"
+  mon_ope: "88677"
+  #mon_ope: "87653"
 ---
 
 ```{r setup, include = FALSE}

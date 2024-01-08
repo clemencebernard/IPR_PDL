@@ -7,9 +7,9 @@ output:
   bookdown::word_document2
 always_allow_html: true
 params:
-#  mes_depts: !r c("22", "29", "35", "56")
-  mes_depts: !r c("44", "49", "53", "72", "85")
-  mon_annee: "2022"
+  mes_depts: !r c("22", "29", "35", "56")
+#  mes_depts: !r c("44", "49", "53", "72", "85")
+  mon_annee: "2023"
 ---
 
 ```{r setup, include = FALSE}
@@ -283,9 +283,9 @@ reg_mei <- reg_data %>%
   ))
 
 # utilisation des relations taille - poids du package aspe
-data("taille_poids")
+# data("taille_poids")
 
-taille_poids <- taille_poids %>%
+taille_poids <- data_taille_poids %>%
   group_by(esp_code_alternatif,
            tlo_libelle) %>%
   arrange(source) %>%
@@ -360,14 +360,14 @@ reg_dept_capt <- reg_ope_capt %>%
 ## Richesse spécifique
 
 ```{r}
-data("traits_bio")
+traits <- readxl::read_xlsx(path = "../raw_data/traits.xlsx")
 
 reg_rs <- reg_data %>% 
   select(esp_code_alternatif,
          annee,
          dept) %>% 
   distinct() %>% 
-  left_join(y = traits_bio %>% 
+  left_join(y = traits %>% 
               select(esp_code_alternatif,
                      introduite = Introduite)) %>%
   filter(!is.na(introduite)) %>% 
