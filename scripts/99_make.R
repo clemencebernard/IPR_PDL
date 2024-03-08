@@ -115,7 +115,7 @@ for(mon_dept in mes_depts)
   
 { 
   
-path <- paste0("rapports_intermediaires/", dept)
+path <- paste0("rapports_intermediaires/", mon_dept)
 mon_zip <- list.files(path = path,
                       pattern = "synthesesOperationsPregenerees.zip$",
                       full.names = TRUE)
@@ -156,8 +156,10 @@ pdf_ope <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
   sort()
 
 qpdf::pdf_combine(input = c(pdf_dept, pdf_intercalaire, pdf_ope),
-                  output = paste0("rapports_finaux/rapport_assemble_",
-                  mon_dept,
-                  ".pdf"))
+                  output = paste0("rapports_finaux/rapport_",
+                                  mon_annee,
+                                  "_",
+                                  mon_dept,
+                                  ".pdf"))
 
 }

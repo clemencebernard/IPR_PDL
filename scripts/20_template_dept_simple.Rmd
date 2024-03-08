@@ -115,9 +115,9 @@ gg_carte_ipr_dept(dept_sel = params$mon_dept,
 
 ## Conditions environnementales
 
-La Figure \@ref(fig:fig2) présente l’évolution temporelle des paramètres environnementaux sur les stations, agrégés à l'échelle du département :
+La Figure \@ref(fig:fig2) présente l’évolution temporelle des paramètres environnementaux sur les stations, agrégés à l'échelle du département en calculant la médiane des valeurs par opération :
 
-- Granulométrie : L’axe des ordonnées varie de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie.
+- Granulométrie : L’axe des ordonnées varie de 0 à 12. Chacun des chiffres correspond à une référence de granulométrie. Avant d'agréger à l'échelle départementale, on calcule à l'opération la granulométrie moyenne des faciès, pondérée par leur surface relative. 
 
       0  = Granulométrie inconnue   
       1  = Argile (<0,0039mm)   
