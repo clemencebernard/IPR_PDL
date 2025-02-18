@@ -280,6 +280,7 @@ render_dept <- function(dept,
                         afficher_graph_pops_depts = FALSE,
                         afficher_graph_distri_tailles = FALSE) {
   rmarkdown::render(
+    #'20_template_dept_complet_histo_comparaisons_depts.Rmd',
     'scripts/20_template_dept_complet_histo_comparaisons_depts.Rmd',
     output_file = paste0("../rapports_intermediaires/",
                          dept,

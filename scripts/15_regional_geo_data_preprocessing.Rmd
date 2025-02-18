@@ -25,6 +25,7 @@ library(COGiter)
 library(tidyverse)
 library(sf)
 library(maptiles)
+library(terra)
 load(file = "../processed_data/reg_data.RData")
 ```
 

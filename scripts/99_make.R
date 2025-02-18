@@ -1,3 +1,5 @@
+library(tidyverse)
+
 # lecture du fichier des fonctions
 source(file = "R/01_fonctions.R")
 
@@ -8,7 +10,7 @@ mes_depts <- c('22', '29', '35', '56')
 # mes_depts <- c('49', '44', '53', '72', '85')
 # mes_depts <- c('09', '11', '12', '30', '31', '32', '34', '46', '48', '65', '66', '81', '82')
 
-mon_annee <- 2023
+mon_annee <- 2024
 
 # -------------------------------------------------
 # organisation des répertoires si nécessaire
@@ -46,6 +48,7 @@ rmarkdown::render(
   params = list(mes_depts = mes_depts,
                 mon_annee = mon_annee)
 )
+
 # -------------------------------------------------
 # production des synthèses par département
 for (dept in mes_depts) {
@@ -104,7 +107,7 @@ for (i in (1:nrow(df_nommage))) {
 
 
 # -------------------------------------------------
-# Téléchargement, par département, des fiches opérations par défaut ASPE en pdf
+# Téléchargement, par département, des synthèses d'opérations par défaut ASPE en pdf (RCS, RRP, RHP)
 # Chaque fichier zip des opérations sur le département pour l'année considéré doit être
 # rangé dans le sous-répertoire du département (ex = "rapports_intermediaires/22" pour
 # le département des Côtes d'Armor).
@@ -126,16 +129,19 @@ unzip(mon_zip, exdir = path)
 
 # -------------------------------------------------
 # Assemblage des rapports départementaux
+# mon_dept <- "85"
 for(mon_dept in mes_depts)
   
 {
 
 old_names <- list.files(path = paste0("rapports_intermediaires/", mon_dept),
              pattern = "SYNTHESE_OPERATION",
+            # pattern = "Synthese Operation - ",
              full.names = TRUE)
 
 new_names <- old_names %>% 
-  str_remove_all("SYNTHESE_OPERATION_")
+  str_remove_all("SYNTHESE_OPERATION_") %>% 
+  str_remove_all("Synthese Operation - ")
 
 file.rename(from = old_names,
             to = new_names)
