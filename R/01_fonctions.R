@@ -297,7 +297,7 @@ render_dept <- function(dept,
 }
 
 # test
-# render_dept(dept = "22", annee = "2022")
+# render_dept(dept = "44", annee = "2024")
 
 #############################################
 # fonction qui sort le rapport pour une ope

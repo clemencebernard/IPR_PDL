@@ -1,0 +1,57 @@
+---
+title: Pêches départementales
+output:
+  bookdown::pdf_book:
+    pandoc_args: ["--metadata-file=header.yaml"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+mon_dept <- "35"
+mon_annee <- 2023
+```
+
+# titre 1
+
+From https://github.com/MargaretSiple-NOAA/parameterized-indexing-example
+
+## Markdown solution to using templates/parameterization in a report
+
+This is a test of the cross-refs in this doc.
+
+```{r}
+load(file = "../processed_data/reg_data.RData")
+
+mes_opes <- reg_data %>% 
+  filter(annee == mon_annee, dept == mon_dept) %>% 
+  pull(ope_id) %>% 
+  unique()
+```
+
+
+
+```{r, echo=FALSE, results='asis'}
+#cyl.vec <- c(4,6)
+src <- list()
+```
+
+
+```{r, echo=FALSE, results='asis'}
+# for(i in 1:length(cyl.vec)){
+#   cylcode <- cyl.vec[i]
+#   src[[i]] <- knitr::knit_expand(here::here('markdown','Template.Rmd'))
+# }
+for(i in 1:length(mes_opes)){
+  mon_ope <- mes_opes[i]
+  src[[i]] <- knitr::knit_expand('30_fiche_operation.Rmd')
+}
+
+```
+
+
+```{r, echo=FALSE, results='asis'}
+res = knitr::knit_child(text = unlist(src), quiet = TRUE)
+cat(res, sep = '\n')
+```
