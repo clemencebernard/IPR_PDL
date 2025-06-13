@@ -1,0 +1,103 @@
+---
+title: "Synthèse pêches électriques réseaux `r params$mon_annee`"
+subtitle: "contrôle qualité"
+author: "OFB - DR Bretagne"
+date: "`r format(Sys.time(), 'Le %d %B %Y')`"
+output:
+  bookdown::word_document2
+always_allow_html: true
+params:
+#  mes_depts: !r c("22", "29", "35", "56")
+  mes_depts: !r c("44", "49", "53", "72", "85")
+  mon_annee: "2024"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+# Préparation des données
+
+## Chargement des packages
+
+```{r}
+# devtools::install_github("pascalirz/aspe")
+# devtools::install_github("pascalirz/ggplotExtra")
+# devtools::install_github("richaben/aspeCQFD")
+library(aspe)
+library(tidyverse)
+library(aspeCQFD)
+```
+
+## Chargement des données
+
+### Mesures individuelles
+
+```{r}
+rdata_mei_1 <- misc_nom_dernier_fichier(repertoire = "../../../../projets/ASPE/raw_data/rdata",
+                                      pattern = "^mei_1")
+
+load(rdata_mei_1)
+mei <- temp_df
+
+rdata_mei_2 <- misc_nom_dernier_fichier(repertoire = "../../../../projets/ASPE/raw_data/rdata",
+                                      pattern = "^mei_2")
+
+load(rdata_mei_2)
+
+mesure_individuelle <- mei %>% 
+  rbind(temp_df)
+```
+
+
+### Autres tables
+
+```{r}
+rdata_tables <- misc_nom_dernier_fichier(repertoire = "../../../../projets/ASPE/raw_data/rdata",
+                                         pattern = "^tables")
+
+load(rdata_tables)
+```
+
+>Départements concernés : `r params$mes_depts %>% sort() %>% paste(collapse = ", ")`.
+
+Fichier de données : `r str_replace(rdata_tables, "../../../../projets/ASPE/raw_data/rdata/", "")`
+
+### Les opérations concernées
+
+```{r}
+load(file = "../processed_data/reg_data.RData")
+```
+
+# Production des fiches
+
+## Création des tableaux nécessaires aux fiches
+
+```{r}
+data_fichesCQ <-
+  mef_creer_ttes_tables_fichesCQ()
+```
+
+## Sélection des stations
+
+```{r}
+mes_codes_sandre <- data_fichesCQ$aspe_table_fiches %>% 
+  filter(sta_id %in% unique(mes_reg_pop$pop_sta_id)) %>% 
+  mutate(id = paste(sta_code_sandre, code_sandre_pp, sep = '_')) %>% 
+  pull(id) %>% 
+  unique()
+```
+
+
+## Génération des fiches
+
+```{r}
+generate_fiche_cq_station(stations = mes_codes_sandre,
+                          dossier_sortie = "../fiches_CQ/PdL",
+                          df_data = data_fichesCQ,
+                          auteur = "OFB - DR Bretagne",
+                          annee_debut = 1998,
+                          annee_fin = 2024,
+                          interactive = T)
+```
+

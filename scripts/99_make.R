@@ -6,8 +6,8 @@ source(file = "R/01_fonctions.R")
 # -------------------------------------------------
 # Paramétrage
 # Liste des départements / année
-mes_depts <- c('22', '29', '35', '56')
-# mes_depts <- c('49', '44', '53', '72', '85')
+# mes_depts <- c('22', '29', '35', '56')
+mes_depts <- c('49', '44', '53', '72', '85')
 # mes_depts <- c('09', '11', '12', '30', '31', '32', '34', '46', '48', '65', '66', '81', '82')
 
 mon_annee <- 2024
@@ -27,7 +27,15 @@ if (!dir.exists(paths = paste0("rapports_intermediaires/", dept)))
     {
   dir.create(path = paste0("rapports_intermediaires/", dept))
     }
-  }
+}
+
+# -------------------------------------------------
+# Nettoyage des fichiers anciens qui traînent dans les sous-répertoires de rapports intermédiaires
+# BIEN VERIFIER QUE CES REPERTOIRES NE CONTIENNENT RIEN DE PRECIEUX
+for(mon_dept in mes_depts) {
+  my_path <- paste0("rapports_intermediaires/", mon_dept, "/*")
+  unlink(my_path, recursive = TRUE, force = TRUE)
+}
 
 
 # -------------------------------------------------
@@ -106,12 +114,14 @@ for (i in (1:nrow(df_nommage))) {
 
 
 
-# -------------------------------------------------
+
+  
+ 
+  
 # Téléchargement, par département, des synthèses d'opérations par défaut ASPE en pdf (RCS, RRP, RHP)
 # Chaque fichier zip des opérations sur le département pour l'année considéré doit être
 # rangé dans le sous-répertoire du département (ex = "rapports_intermediaires/22" pour
 # le département des Côtes d'Armor).
-# si d'anciens fichiers trainent, il faut les supprimer
 
 # dézippage
 for(mon_dept in mes_depts)
